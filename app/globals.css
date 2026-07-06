@@ -1,26 +1,98 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Warm, restrained palette — same stone base as Sikizana so the sibling
+     projects read as one family. Deliberately light: this is the flagship
+     look, not just whatever the visitor's OS happens to prefer. */
+  --background: #faf8f5;
+  --foreground: #1c1917;
+  --muted: #78716c;
+  --border: #e7e2db;
+  --accent: #c2620d;
+
+  /* Per-project accents — sampled from each live product's own real
+     identity, not invented. Used only on that project's card. */
+  --sikizana: #d4843a;
+  --nuncio-bg: #f6f3ea;
+  --nuncio-fg: #4a4740;
+  --nuncio-accent: #5b52d6;
+  --lenitnes-bg: #0c1013;
+  --lenitnes-fg: #eef2f3;
+  --lenitnes-accent: #22d3ee;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-muted: var(--muted);
+  --color-border: var(--border);
+  --color-accent: var(--accent);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans), Arial, Helvetica, sans-serif;
 }
+
+/* ---- Motion: easing + timing per emil-design-eng standards ---- */
+:root {
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+}
+
+/* Project cards — the page's one meaningful interactive element.
+   Hover motion is real motion, gated to devices that actually hover so a
+   tap on touch doesn't fire a lingering hover state. Press feedback and
+   a first-load stagger are added on top; see review notes in page.tsx. */
+.project-card {
+  transition: border-color 200ms ease;
+}
+
+.project-card:active {
+  transform: scale(0.98);
+  transition: transform 160ms var(--ease-out);
+}
+
+.project-card .card-glow {
+  opacity: 0.25;
+  transition: opacity 200ms ease;
+}
+
+.project-card .card-icon {
+  transition: transform 200ms var(--ease-out);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .project-card:hover {
+    border-color: color-mix(in srgb, var(--card-accent) 50%, transparent);
+  }
+  .project-card:hover .card-glow {
+    opacity: 0.7;
+  }
+  .project-card:hover .card-icon {
+    transform: scale(1.1);
+  }
+  .project-card:hover .card-visit {
+    opacity: 1;
+  }
+}
+
+/* First-load entrance — rare per visitor, so delight is earned here.
+   Modern @starting-style, no JS; each element opts in via data-enter. */
+@media (prefers-reduced-motion: no-preference) {
+  [data-enter] {
+    opacity: 1;
+    transform: translateY(0);
+    transition: opacity 400ms var(--ease-out), transform 400ms var(--ease-out);
+    transition-delay: var(--enter-delay, 0ms);
+
+    @starting-style {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+  }
+}
+
