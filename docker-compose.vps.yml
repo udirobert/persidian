@@ -1,0 +1,25 @@
+# Persidian — VPS deployment (nuncio-vultr)
+# Traefik routes persidian.com + www.persidian.com to this container via
+# the shared "coolify" Docker network — same pattern as the lenitnes and
+# sikizana services already running on this box.
+
+services:
+  persidian-web:
+    build: .
+    container_name: persidian-web
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:13002:3000"
+    networks:
+      - coolify
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=coolify
+      - traefik.http.routers.persidian-web.rule=Host(`persidian.com`) || Host(`www.persidian.com`)
+      - traefik.http.routers.persidian-web.entrypoints=https
+      - traefik.http.routers.persidian-web.tls.certresolver=letsencrypt
+      - traefik.http.services.persidian-web.loadbalancer.server.port=3000
+
+networks:
+  coolify:
+    external: true
