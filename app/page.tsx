@@ -315,7 +315,7 @@ function StudioThesis() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-20">
           <div data-enter style={{ "--enter-delay": "40ms" } as React.CSSProperties}>
             <h2 className="text-2xl sm:text-4xl font-semibold tracking-tight leading-tight">
-              A portfolio, not an app.
+              Risk builds where no one is looking. Our agents work there.
             </h2>
           </div>
           <div className="space-y-6 text-muted leading-relaxed" data-enter style={{ "--enter-delay": "80ms" } as React.CSSProperties}>
