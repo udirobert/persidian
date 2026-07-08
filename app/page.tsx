@@ -310,24 +310,23 @@ function StudioThesis() {
           </div>
           <div className="space-y-6 text-muted leading-relaxed" data-enter style={{ "--enter-delay": "80ms" } as React.CSSProperties}>
             <p>
-              The most expensive problems in a business are the ones that
-              compound silently: invoices aging past their terms, outreach going
-              unanswered, data quality tests failing in the dark, market-moving
-              signals leaking through commits before anyone reads them.
+              The risks that sink a business don&apos;t arrive as alarms — they
+              compound quietly: cash aging past its terms, outreach going cold,
+              data degrading in the dark, signals leaking through commits before
+              anyone reads them.
             </p>
             <p>
-              Persidian builds autonomous agents that watch these rhythms and
-              act before the damage scales. Each product shares one design
-              pattern: identify a recurring, high-cost business risk; connect to
-              the systems where the risk lives; let an agent do the work; keep a
-              human at the approval gate.
+              Persidian builds agents that live inside those rhythms and act
+              while the cost is still small. Every product runs one pattern: find
+              a risk that repeats and costs real money, plug into the system
+              where it lives, let an agent do the work, keep a human at the
+              approval gate.
             </p>
             <p className="text-foreground">
-              <strong>The strategic case:</strong> every product is
-              independently valuable and addresses a distinct enterprise buyer.
-              Together they demonstrate a repeatable studio capability — shipping
-              production-grade AI agents with real integrations, real moats,
-              and live deployments.
+              Run as a studio, the five products compound on each other — each
+              serves a different enterprise buyer, and every integration hardens
+              the next. The aim is an operating layer businesses trust to act on
+              their behalf.
             </p>
           </div>
         </div>
@@ -945,11 +944,11 @@ function TheStudio() {
               Built to compound.
             </h2>
             <p className="mt-6 text-muted leading-relaxed">
-              A portfolio of live products, one studio capability. Each has a
-              clear enterprise buyer, real integrations, and a defensible
-              position. Together they demonstrate a repeatable pattern:
-              identify a compounding business risk, build an autonomous agent,
-              and ship a product that customers use every day.
+              A portfolio of live products, one studio capability. Each serves a
+              distinct enterprise buyer and ships with real integrations. The
+              compounding comes from running them together: every integration
+              hardens the next, and the studio gets faster at shipping agents
+              customers use every day.
             </p>
             <div className="mt-8 flex flex-wrap items-center gap-4">
               <a
