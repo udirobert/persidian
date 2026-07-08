@@ -574,7 +574,7 @@ function SikizanaProof() {
     <BeatLayout
       kicker="01 / Sikizana"
       label="The proof"
-      title="Built for the Xero Hackathon. Live today."
+      title="Live in production on Xero."
       accent={p.accent}
       muted={p.muted}
       href={p.href}
