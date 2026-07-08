@@ -5,6 +5,7 @@ import { useEffect, useRef, useState, useSyncExternalStore, type ReactNode } fro
 interface StaggeredGridProps {
   children: ReactNode;
   className?: string;
+  style?: React.CSSProperties;
 }
 
 /**
@@ -17,7 +18,7 @@ interface StaggeredGridProps {
  * Implemented with an IntersectionObserver and CSS custom properties
  * so no heavy animation runtime is required.
  */
-export function StaggeredGrid({ children, className = "" }: StaggeredGridProps) {
+export function StaggeredGrid({ children, className = "", style }: StaggeredGridProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [visible, setVisible] = useState(false);
 
@@ -53,6 +54,7 @@ export function StaggeredGrid({ children, className = "" }: StaggeredGridProps) 
     <div
       ref={containerRef}
       className={`staggered-grid ${className}`}
+      style={style}
       data-visible={visible}
       data-reduced-motion={prefersReducedMotion}
     >

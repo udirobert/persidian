@@ -9,6 +9,7 @@ import {
   PaperPlaneIcon,
   PulseIcon,
   WatcherIcon,
+  WeaveIcon,
 } from "@/components/ProductIcon";
 import Image from "next/image";
 
@@ -18,6 +19,7 @@ interface Project {
   href: string;
   repo: string;
   tagline: string;
+  thesisLabel: string;
   icon: () => React.ReactElement;
   shot: string;
   bg: string;
@@ -35,6 +37,7 @@ const PROJECTS: Project[] = [
     repo: "https://github.com/udirobert/sikizana",
     tagline:
       "Get paid faster, with Xero. AI credit controller and bookkeeper that ages receivables, benchmarks your sector, and chases overdue invoices.",
+    thesisLabel: "Money in",
     icon: ReceiptIcon,
     shot: "/shots/sikizana.png",
     bg: "#faf8f5",
@@ -50,6 +53,7 @@ const PROJECTS: Project[] = [
     repo: "https://github.com/udirobert/nuncio",
     tagline:
       "Send a video they'll actually watch. Multi-agent video personalization for sales, recruiting, and investor outreach.",
+    thesisLabel: "Messages out",
     icon: PaperPlaneIcon,
     shot: "/shots/nuncio.png",
     bg: "#f6f3ea",
@@ -65,6 +69,7 @@ const PROJECTS: Project[] = [
     repo: "https://github.com/sneldao/lenitnes",
     tagline:
       "Autonomous signal intelligence. Reads commits to consensus-critical code, commits theses on-chain, and tracks an undeniable public scorecard.",
+    thesisLabel: "Theses tested",
     icon: PulseIcon,
     shot: "/shots/lenitnes.png",
     bg: "#0c1013",
@@ -80,12 +85,29 @@ const PROJECTS: Project[] = [
     repo: "https://github.com/thisyearnofear/databard",
     tagline:
       "Watches your data estate. Health scores, lineage risk, and PII flags — delivered as podcasts, dashboards, reports, and on-chain attestations.",
+    thesisLabel: "Data trusted",
     icon: WatcherIcon,
     shot: "/shots/databard.png",
     bg: "#f5ede0",
     fg: "#3a2a1a",
     accent: "#b45309",
     muted: "#78716c",
+    fontClass: "",
+  },
+  {
+    number: "05",
+    name: "Weft",
+    href: "https://weft.persidian.com",
+    repo: "https://github.com/thisyearnofear/weft",
+    tagline:
+      "Escrow that releases itself. FHE-sealed agent consensus verifies milestones and unlocks capital without manual review.",
+    thesisLabel: "Capital released",
+    icon: WeaveIcon,
+    shot: "/shots/weft.png",
+    bg: "#f4f8f7",
+    fg: "#1c211f",
+    accent: "#059669",
+    muted: "#5f6e6a",
     fontClass: "",
   },
 ];
@@ -170,6 +192,22 @@ export default function Home() {
           </PinnedSection>
         </section>
 
+        <section aria-label="Weft">
+          <PinnedSection
+            id="weft"
+            style={{
+              background: PROJECTS[4].bg,
+              color: PROJECTS[4].fg,
+            }}
+          >
+            {[
+              <WeftWhat key="w-what" />,
+              <WeftVision key="w-vision" />,
+              <WeftProof key="w-proof" />,
+            ]}
+          </PinnedSection>
+        </section>
+
         <BatonRule />
         <TheStudio />
       </main>
@@ -212,15 +250,19 @@ function Hero() {
               <span className="text-accent font-bold">DIAN</span>
             </p>
             <h1 className="text-4xl sm:text-6xl lg:text-7xl font-semibold tracking-tight leading-[1.05] text-foreground">
-              A portfolio of
+              Autonomous agents
               <br />
-              autonomous products.
+              are the new
+              <br />
+              operating layer.
             </h1>
             <p className="mt-6 sm:mt-8 text-base sm:text-lg text-muted max-w-lg leading-relaxed">
-              Each product watches a compounding business risk — invoices,
-              outreach, theses, data — and acts before the damage scales.
-              Together they form Persidian: a studio for dependable autonomous
-              software agents.
+              First, software recorded work. Then it automated tasks. Now it
+              observes, decides, and acts — continuously. Persidian builds
+              agents that watch the compounding risks inside a business:
+              cash, outreach, signals, data. A portfolio of live products,
+              one studio, one repeatable pattern for dependable autonomous
+              software.
             </p>
             <div className="mt-8 flex flex-wrap items-center gap-4" data-enter style={{ "--enter-delay": "80ms" } as React.CSSProperties}>
               <a
@@ -275,13 +317,13 @@ function StudioThesis() {
             </p>
             <p>
               Persidian builds autonomous agents that watch these rhythms and
-              act before the damage scales. The four products share one design
+              act before the damage scales. Each product shares one design
               pattern: identify a recurring, high-cost business risk; connect to
               the systems where the risk lives; let an agent do the work; keep a
               human at the approval gate.
             </p>
             <p className="text-foreground">
-              <strong>The strategic case:</strong> each product is
+              <strong>The strategic case:</strong> every product is
               independently valuable and addresses a distinct enterprise buyer.
               Together they demonstrate a repeatable studio capability — shipping
               production-grade AI agents with real integrations, real moats,
@@ -290,19 +332,21 @@ function StudioThesis() {
           </div>
         </div>
 
-        <div className="mt-16 grid grid-cols-2 sm:grid-cols-4 gap-px bg-border border border-border rounded-2xl overflow-hidden" data-enter style={{ "--enter-delay": "120ms" } as React.CSSProperties}>
-          {[
-            { label: "Money in", product: "Sikizana" },
-            { label: "Messages out", product: "Nuncio" },
-            { label: "Theses tested", product: "Lenitnes" },
-            { label: "Data trusted", product: "DataBard" },
-          ].map((item) => (
+        <div
+          className="mt-16 grid gap-px bg-border border border-border rounded-2xl overflow-hidden"
+          data-enter
+          style={{
+            gridTemplateColumns: `repeat(${PROJECTS.length}, minmax(0, 1fr))`,
+            "--enter-delay": "120ms",
+          } as React.CSSProperties}
+        >
+          {PROJECTS.map((p) => (
             <div
-              key={item.product}
+              key={p.name}
               className="bg-background p-5 sm:p-6 text-center sm:text-left"
             >
-              <p className="section-label text-muted mb-1">{item.label}</p>
-              <p className="text-sm sm:text-base font-semibold">{item.product}</p>
+              <p className="section-label text-muted mb-1">{p.thesisLabel}</p>
+              <p className="text-sm sm:text-base font-semibold">{p.name}</p>
             </div>
           ))}
         </div>
@@ -317,10 +361,15 @@ function PortfolioIndex() {
       <div className="max-w-5xl mx-auto">
         <p className="section-kicker text-muted mb-5" data-enter>The portfolio</p>
         <h2 className="text-2xl sm:text-4xl font-semibold tracking-tight leading-tight mb-12" data-enter style={{ "--enter-delay": "40ms" } as React.CSSProperties}>
-          Four live products. Four enterprise buyers.
+          Live products. Distinct enterprise buyers.
         </h2>
 
-        <StaggeredGrid className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 items-start">
+        <StaggeredGrid
+          className="grid gap-4 items-start"
+          style={{
+            gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
+          } as React.CSSProperties}
+        >
           {PROJECTS.map((p) => {
             const Icon = p.icon;
             return (
@@ -788,6 +837,103 @@ function DataBardProof() {
   );
 }
 
+/* ---- Weft ---- */
+function WeftWhat() {
+  const p = PROJECTS[4];
+  return (
+    <BeatLayout
+      kicker="05 / Weft"
+      label="What it does"
+      title="Escrow that releases itself when agents agree."
+      accent={p.accent}
+      muted={p.muted}
+      href={p.href}
+      repo={p.repo}
+      name={p.name}
+    >
+      <p>
+        A sponsor locks capital behind a milestone. The builder ships. Three
+        independent verifier agents collect evidence — deployment state,
+        on-chain activity, GitHub commits, peer verdicts — and vote on whether
+        the deliverable was met. If two of three agree, the contract releases
+        funds automatically.
+      </p>
+      <p>
+        For confidential milestones, each agent encrypts its ballot and
+        confidence score with Zama FHE. The contract tallies votes on
+        ciphertext, so no verifier can see the others&apos; votes before casting
+        their own. Only the final verified boolean is ever decrypted.
+      </p>
+    </BeatLayout>
+  );
+}
+
+function WeftVision() {
+  const p = PROJECTS[4];
+  return (
+    <BeatLayout
+      kicker="05 / Weft"
+      label="The vision"
+      title="Trustless milestones become the default way to work."
+      accent={p.accent}
+      muted={p.muted}
+      href={p.href}
+      repo={p.repo}
+      name={p.name}
+    >
+      <p>
+        Freelancers, DAOs, and remote teams waste enormous energy chasing
+        payment, negotiating scope, and proving delivery. Weft removes the
+        politics by making verification a protocol: capital is escrowed, outcomes
+        are verified by autonomous agents, and reputation attaches to the
+        builder&apos;s ENS identity across every project they complete.
+      </p>
+      <p>
+        The agent itself is a self-sustaining participant. It earns a 3% fee
+        on every milestone it verifies, uses the revenue to pay for its own
+        infrastructure, and becomes a tiny autonomous company running onchain.
+        The moat is the cryptographically sealed consensus loop — not reputation
+        scores, but verifiable votes no single party can manipulate.
+      </p>
+    </BeatLayout>
+  );
+}
+
+function WeftProof() {
+  const p = PROJECTS[4];
+  return (
+    <BeatLayout
+      kicker="05 / Weft"
+      label="The proof"
+      title="Live on 0G and Sepolia with sealed FHE consensus."
+      accent={p.accent}
+      muted={p.muted}
+      href={p.href}
+      repo={p.repo}
+      name={p.name}
+    >
+      <ul className="space-y-3 list-disc pl-5 marker:text-accent">
+        <li>
+          Live deployments on 0G Galileo Testnet and Sepolia with verified
+          milestone contracts.
+        </li>
+        <li>
+          Two Zama FHE contract versions: addition-class sealed ballots and
+          multiplication-class confidence-weighted ballots.
+        </li>
+        <li>
+          Integration partners already in place: Zama, 0G, Gensyn/AXL,
+          KeeperHub, ENS, Hermes + Kimi, and fal.ai.
+        </li>
+        <li>
+          Full surfaces: sponsor dashboard, builder profile, verification
+          explorer, and agent operations console.
+        </li>
+      </ul>
+    </BeatLayout>
+  );
+}
+
 function TheStudio() {
   return (
     <section id="studio" className="py-24 sm:py-32 px-5 sm:px-10 bg-background text-foreground border-t border-border">
@@ -799,11 +945,11 @@ function TheStudio() {
               Built to compound.
             </h2>
             <p className="mt-6 text-muted leading-relaxed">
-              Four live products, one studio capability. Each has a clear
-              enterprise buyer, real integrations, and a defensible position.
-              Together they demonstrate a repeatable pattern: identify a
-              compounding business risk, build an autonomous agent, and ship a
-              product that customers use every day.
+              A portfolio of live products, one studio capability. Each has a
+              clear enterprise buyer, real integrations, and a defensible
+              position. Together they demonstrate a repeatable pattern:
+              identify a compounding business risk, build an autonomous agent,
+              and ship a product that customers use every day.
             </p>
             <div className="mt-8 flex flex-wrap items-center gap-4">
               <a
@@ -816,10 +962,10 @@ function TheStudio() {
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6" data-enter style={{ "--enter-delay": "80ms" } as React.CSSProperties}>
-            <Signal label="Live products" value="4" />
-            <Signal label="Public repositories" value="4" />
+            <Signal label="Live products" value={String(PROJECTS.length)} />
+            <Signal label="Public repositories" value={String(PROJECTS.length)} />
             <Signal label="Production integrations" value="10+" />
-            <Signal label="Primary markets" value="4" />
+            <Signal label="Primary markets" value={String(PROJECTS.length)} />
             <Signal label="Deployment model" value="Docker / VPS / Cloud" />
             <Signal label="Studio status" value="Active" />
           </div>

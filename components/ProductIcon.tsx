@@ -41,3 +41,13 @@ export function WatcherIcon() {
     </svg>
   );
 }
+
+export function WeaveIcon() {
+  return (
+    <svg {...ICON_PROPS}>
+      <rect x="6" y="6" width="20" height="20" rx="3" />
+      <path d="M6 12h20M6 20h20M12 6v20M20 6v20" />
+      <circle cx="16" cy="16" r="2.5" />
+    </svg>
+  );
+}
