@@ -14,21 +14,21 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://persidian.com"),
-  title: "Persidian",
+  title: "Persidian — A portfolio of autonomous enterprise products",
   description:
-    "Persistence + circadian. Small, dependable software for businesses that run every day.",
+    "Four live products, one studio capability. Sikizana, Nuncio, Lenitnes, and DataBard are autonomous agents that watch compounding business risks and act before the damage scales.",
   openGraph: {
-    title: "Persidian",
+    title: "Persidian — A portfolio of autonomous enterprise products",
     description:
-      "Persistence + circadian. Small, dependable software for businesses that run every day.",
+      "Four live products, one studio capability. Sikizana, Nuncio, Lenitnes, and DataBard are autonomous agents that watch compounding business risks and act before the damage scales.",
     type: "website",
     url: "https://persidian.com",
   },
   twitter: {
-    card: "summary",
-    title: "Persidian",
+    card: "summary_large_image",
+    title: "Persidian — A portfolio of autonomous enterprise products",
     description:
-      "Persistence + circadian. Small, dependable software for businesses that run every day.",
+      "Four live products, one studio capability. Sikizana, Nuncio, Lenitnes, and DataBard are autonomous agents that watch compounding business risks and act before the damage scales.",
   },
 };
 

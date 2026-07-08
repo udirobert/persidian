@@ -36,6 +36,17 @@
   --font-mono: var(--font-geist-mono);
 }
 
+html {
+  scroll-behavior: smooth;
+  scroll-padding-top: 80px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+}
+
 body {
   background: var(--background);
   color: var(--foreground);
@@ -142,6 +153,103 @@ body {
       opacity: 0;
       transform: translateY(10px);
     }
+  }
+}
+
+/* ---- Staggered 3D grid index ---- */
+.staggered-grid {
+  perspective: 1200px;
+}
+
+.staggered-grid > * {
+  transform-style: preserve-3d;
+  opacity: 1;
+  transform: translateY(0) rotateX(0deg);
+  transition:
+    opacity 700ms var(--ease-out),
+    transform 700ms var(--ease-out);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .staggered-grid:not([data-reduced-motion="true"]):not([data-visible="true"]) > * {
+    opacity: 0;
+    transform: translateY(40px) rotateX(12deg);
+  }
+
+  .staggered-grid:not([data-reduced-motion="true"])[data-visible="true"] > * {
+    opacity: 1;
+    transform: translateY(0) rotateX(0deg);
+  }
+
+  .staggered-grid:not([data-reduced-motion="true"]) > *:nth-child(1) { transition-delay: 0ms; }
+  .staggered-grid:not([data-reduced-motion="true"]) > *:nth-child(2) { transition-delay: 80ms; }
+  .staggered-grid:not([data-reduced-motion="true"]) > *:nth-child(3) { transition-delay: 160ms; }
+  .staggered-grid:not([data-reduced-motion="true"]) > *:nth-child(4) { transition-delay: 240ms; }
+}
+
+/* ---- Acquisition section rhythm ---- */
+.section-kicker {
+  font-family: var(--font-geist-mono), ui-monospace, SFMono-Regular, monospace;
+  font-size: 0.75rem;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+}
+
+.section-label {
+  font-family: var(--font-geist-mono), ui-monospace, SFMono-Regular, monospace;
+  font-size: 0.65rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+/* Product section accent tokens — inherited by PinnedSection children
+   via inline style so each full-bleed section carries its own mood. */
+.product-section {
+  --section-fg: currentColor;
+  --section-muted: currentColor;
+  color: var(--section-fg);
+}
+
+/* Pinned-section progress dots inherit the section colour. */
+.pinned-progress-dot {
+  background: currentColor;
+}
+
+/* ---- Pinned section beat transitions ----
+   Entrance-only animation: the old beat disappears instantly when it
+   becomes inactive, the new beat animates in. This prevents multiple
+   beats from ghosting on top of each other during scroll. */
+.pinned-beat {
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(24px) scale(0.98);
+}
+
+.pinned-beat[data-active="true"] {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(0) scale(1);
+  animation: beat-enter 400ms var(--ease-out) forwards;
+}
+
+.pinned-beat[data-active="false"][data-direction="past"] {
+  transform: translateY(-24px) scale(0.98);
+}
+
+@keyframes beat-enter {
+  from {
+    opacity: 0;
+    transform: translateY(24px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pinned-beat[data-active="true"] {
+    animation: none;
   }
 }
 
