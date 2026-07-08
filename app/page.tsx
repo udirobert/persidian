@@ -302,6 +302,16 @@ function StudioThesis() {
     <section id="thesis" className="py-24 sm:py-32 px-5 sm:px-10 bg-background text-foreground border-t border-border">
       <div className="max-w-5xl mx-auto">
         <p className="section-kicker text-muted mb-5" data-enter>The thesis</p>
+        <blockquote
+          className="mb-12 max-w-3xl text-2xl sm:text-3xl font-medium italic leading-snug text-foreground"
+          data-enter
+          style={{ "--enter-delay": "20ms" } as React.CSSProperties}
+        >
+          &ldquo;The future is already here — it&rsquo;s just not evenly distributed.&rdquo;
+          <cite className="mt-3 block text-xs not-italic font-mono uppercase tracking-[0.15em] text-muted">
+            William Gibson
+          </cite>
+        </blockquote>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-20">
           <div data-enter style={{ "--enter-delay": "40ms" } as React.CSSProperties}>
             <h2 className="text-2xl sm:text-4xl font-semibold tracking-tight leading-tight">
