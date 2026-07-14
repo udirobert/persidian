@@ -5,6 +5,11 @@ import {
 } from "./diagnostic";
 import type { BaseProject } from "./products";
 
+export interface LLMMessage {
+  role: "system" | "user" | "assistant";
+  content: string;
+}
+
 const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
 const OPENROUTER_MODEL = process.env.OPENROUTER_MODEL || "tencent/hy3";
 const OPENROUTER_SITE_URL =
@@ -17,7 +22,96 @@ const NVIDIA_MODEL =
 const NVIDIA_BASE_URL =
   process.env.NVIDIA_BASE_URL || "https://integrate.api.nvidia.com/v1";
 
-function buildPrompt(
+async function callOpenRouter(
+  messages: LLMMessage[],
+  maxTokens = 120
+): Promise<string | null> {
+  if (!OPENROUTER_API_KEY) return null;
+
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 8000);
+
+  try {
+    const response = await fetch(
+      "https://openrouter.ai/api/v1/chat/completions",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${OPENROUTER_API_KEY}`,
+          "HTTP-Referer": OPENROUTER_SITE_URL,
+          "X-Title": OPENROUTER_SITE_NAME,
+        },
+        body: JSON.stringify({
+          model: OPENROUTER_MODEL,
+          messages,
+          max_tokens: maxTokens,
+        }),
+        signal: controller.signal,
+      }
+    );
+    clearTimeout(timeout);
+
+    if (!response.ok) return null;
+
+    const data = (await response.json()) as {
+      choices?: { message?: { content?: string | null } }[];
+    };
+
+    return data.choices?.[0]?.message?.content?.trim() || null;
+  } catch {
+    return null;
+  }
+}
+
+async function callNvidia(
+  messages: LLMMessage[],
+  maxTokens = 120
+): Promise<string | null> {
+  if (!NVIDIA_API_KEY) return null;
+
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 15000);
+
+  try {
+    const response = await fetch(`${NVIDIA_BASE_URL}/chat/completions`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${NVIDIA_API_KEY}`,
+      },
+      body: JSON.stringify({
+        model: NVIDIA_MODEL,
+        messages,
+        max_tokens: maxTokens,
+        temperature: 0.7,
+        top_p: 0.9,
+        chat_template_kwargs: { enable_thinking: false },
+      }),
+      signal: controller.signal,
+    });
+    clearTimeout(timeout);
+
+    if (!response.ok) return null;
+
+    const data = (await response.json()) as {
+      choices?: { message?: { content?: string | null } }[];
+    };
+
+    return data.choices?.[0]?.message?.content?.trim() || null;
+  } catch {
+    return null;
+  }
+}
+
+export async function callLLM(
+  messages: LLMMessage[],
+  maxTokens = 120
+): Promise<string | null> {
+  return (await callOpenRouter(messages, maxTokens)) || callNvidia(messages, maxTokens);
+}
+
+function buildReasoningPrompt(
   answers: DiagnosticAnswers,
   product: BaseProject,
   top: ProductScore,
@@ -48,106 +142,51 @@ Matched signals for ${product.name}:
 Fit score: ${top.percentage}%. ${runnerUpLine}`;
 }
 
-async function callOpenRouter(prompt: string): Promise<string | null> {
-  if (!OPENROUTER_API_KEY) return null;
-
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 8000);
-
-  try {
-    const response = await fetch(
-      "https://openrouter.ai/api/v1/chat/completions",
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${OPENROUTER_API_KEY}`,
-          "HTTP-Referer": OPENROUTER_SITE_URL,
-          "X-Title": OPENROUTER_SITE_NAME,
-        },
-        body: JSON.stringify({
-          model: OPENROUTER_MODEL,
-          messages: [
-            {
-              role: "system",
-              content:
-                "You write concise, confident product-fit explanations for Persidian's business concierge. One sentence, max 30 words. Mention specific signals. No questions.",
-            },
-            { role: "user", content: prompt },
-          ],
-          max_tokens: 80,
-        }),
-        signal: controller.signal,
-      }
-    );
-    clearTimeout(timeout);
-
-    if (!response.ok) return null;
-
-    const data = (await response.json()) as {
-      choices?: { message?: { content?: string | null } }[];
-    };
-
-    return data.choices?.[0]?.message?.content?.trim() || null;
-  } catch {
-    return null;
-  }
-}
-
-async function callNvidia(prompt: string): Promise<string | null> {
-  if (!NVIDIA_API_KEY) return null;
-
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 15000);
-
-  try {
-    const response = await fetch(`${NVIDIA_BASE_URL}/chat/completions`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${NVIDIA_API_KEY}`,
-      },
-      body: JSON.stringify({
-        model: NVIDIA_MODEL,
-        messages: [
-          {
-            role: "system",
-            content:
-              "You write concise, confident product-fit explanations for Persidian's business concierge. One sentence, max 30 words. Mention specific signals. No questions.",
-          },
-          { role: "user", content: prompt },
-        ],
-        max_tokens: 80,
-        temperature: 0.7,
-        top_p: 0.9,
-        chat_template_kwargs: { enable_thinking: false },
-      }),
-      signal: controller.signal,
-    });
-    clearTimeout(timeout);
-
-    if (!response.ok) return null;
-
-    const data = (await response.json()) as {
-      choices?: { message?: { content?: string | null } }[];
-    };
-
-    return data.choices?.[0]?.message?.content?.trim() || null;
-  } catch {
-    return null;
-  }
-}
-
 export async function generateReasoning(
   answers: DiagnosticAnswers,
   product: BaseProject,
   top: ProductScore,
   runnerUp: ProductScore | undefined
 ): Promise<string | null> {
-  const prompt = buildPrompt(answers, product, top, runnerUp);
+  const prompt = buildReasoningPrompt(answers, product, top, runnerUp);
 
-  const openRouterContent = await callOpenRouter(prompt);
-  if (openRouterContent) return openRouterContent;
+  return callLLM([
+    {
+      role: "system",
+      content:
+        "You write concise, confident product-fit explanations for Persidian's business concierge. One sentence, max 30 words. Mention specific signals. No questions.",
+    },
+    { role: "user", content: prompt },
+  ]);
+}
 
-  return callNvidia(prompt);
+export async function generateChatResponse(
+  message: string,
+  product: BaseProject | null,
+  answers: DiagnosticAnswers
+): Promise<string | null> {
+  const productContext = product
+    ? `Recommended product: ${product.name} — ${product.thesisLabel}. Tagline: ${product.tagline}. Product page: ${product.href}`
+    : "No specific product was recommended yet.";
+
+  const diagnosticContext = `- Function: ${answers.role || "not provided"}
+- Pain points: ${(answers.painPoints ?? []).join(", ") || "not provided"}
+- Tools: ${(answers.tools ?? []).join(", ") || "not provided"}
+- Timeline: ${answers.timeline || "not provided"}`;
+
+  return callLLM(
+    [
+      {
+        role: "system",
+        content: `You are Persidian's business concierge. You help a visitor understand which Persidian agent fits their business. Be concise, confident, and helpful. Steer the conversation toward booking a demo when appropriate. If asked something unrelated to Persidian or its products, politely decline and redirect to Persidian.
+
+${productContext}
+
+Diagnostic context:
+${diagnosticContext}`,
+      },
+      { role: "user", content: message },
+    ],
+    200
+  );
 }

@@ -112,6 +112,7 @@ export function Diagnostic({ accent }: DiagnosticProps) {
     return (
       <ResultView
         result={result}
+        answers={answers}
         accent={accent}
         liveScores={liveScores}
         onRestart={reset}
@@ -126,12 +127,8 @@ export function Diagnostic({ accent }: DiagnosticProps) {
         data-enter
       >
         <p className="section-kicker text-muted mb-3">Business X-ray</p>
-        <h3 className="text-2xl sm:text-3xl font-semibold tracking-tight leading-tight">
-          Find the compounding risk your business is ignoring.
-        </h3>
-        <p className="mt-4 text-muted leading-relaxed">
-          Four structured questions. No chatbot. We surface which Persidian
-          product addresses your most expensive hidden risk.
+        <p className="text-muted leading-relaxed">
+          Tell us what hurts. We will surface the Persidian agent that fixes it.
         </p>
         <div className="mt-6 flex flex-wrap items-center gap-3">
           <button
@@ -142,13 +139,17 @@ export function Diagnostic({ accent }: DiagnosticProps) {
           >
             Start the X-ray →
           </button>
+          <span className="text-sm text-muted">Takes ~30 seconds</span>
+        </div>
+        <p className="mt-4 text-xs text-muted">
+          Prefer email?{" "}
           <a
             href={`mailto:${EMAIL}`}
-            className="text-sm font-medium text-muted hover:text-foreground transition-colors"
+            className="underline underline-offset-4 hover:text-foreground transition-colors"
           >
-            Or email {EMAIL}
+            {EMAIL}
           </a>
-        </div>
+        </p>
       </div>
     );
   }
@@ -267,11 +268,13 @@ function ScoreBoard({
 
 function ResultView({
   result,
+  answers,
   accent,
   liveScores,
   onRestart,
 }: {
   result: DiagnosticResult;
+  answers: DiagnosticAnswers;
   accent?: string;
   liveScores: ReturnType<typeof scoreAnswers>;
   onRestart: () => void;
@@ -324,12 +327,10 @@ function ResultView({
         </a>
         {product && (
           <a
-            href={product.href}
-            target="_blank"
-            rel="noopener noreferrer"
+            href={`#${product.iconName}`}
             className="inline-flex items-center gap-2 px-4 py-2.5 rounded-full border border-border text-sm font-medium hover:border-foreground/30 transition-colors"
           >
-            Visit {product.name}
+            See the {product.name} case
           </a>
         )}
         <button
@@ -343,12 +344,114 @@ function ResultView({
 
       <ScoreBoard scores={liveScores} className="mt-10 pt-8 border-t border-border" />
 
+      {product && <ChatPanel product={product} answers={answers} accent={accent} />}
+
       <p className="mt-6 text-xs text-muted">
         Or email directly at{" "}
         <a href={`mailto:${EMAIL}`} className="underline underline-offset-4">
           {EMAIL}
         </a>
       </p>
+    </div>
+  );
+}
+
+function ChatPanel({
+  product,
+  answers,
+  accent,
+}: {
+  product: BaseProject;
+  answers: DiagnosticAnswers;
+  accent?: string;
+}) {
+  const [messages, setMessages] = useState<
+    { role: "user" | "assistant"; content: string }[]
+  >([]);
+  const [input, setInput] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const text = input.trim();
+    if (!text || loading) return;
+
+    setMessages((prev) => [...prev, { role: "user", content: text }]);
+    setInput("");
+    setLoading(true);
+
+    try {
+      const response = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          message: text,
+          answers,
+          productKey: product.iconName,
+        }),
+      });
+      const data = (await response.json()) as { reply?: string; error?: string };
+      if (!response.ok || !data.reply) {
+        throw new Error(data.error || "No response");
+      }
+      setMessages((prev) => [
+        ...prev,
+        { role: "assistant", content: data.reply ?? "" },
+      ]);
+    } catch {
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: "assistant",
+          content:
+            "Sorry, I couldn't reach the concierge. Please try again or email hello@persidian.com.",
+        },
+      ]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="mt-10 pt-8 border-t border-border">
+      <p className="section-label text-muted mb-4">Ask the concierge</p>
+      {messages.length > 0 && (
+        <div className="space-y-3 mb-4">
+          {messages.map((m, i) => (
+            <div
+              key={i}
+              className={`text-sm ${
+                m.role === "user" ? "font-medium text-foreground" : "text-muted"
+              }`}
+            >
+              <span className="font-mono text-xs uppercase tracking-wider text-muted mr-2">
+                {m.role === "user" ? "You" : "Concierge"}
+              </span>
+              {m.content}
+            </div>
+          ))}
+          {loading && (
+            <p className="text-sm text-muted">Concierge is typing...</p>
+          )}
+        </div>
+      )}
+      <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row gap-2">
+        <input
+          type="text"
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          placeholder="What would you like to know about this recommendation?"
+          className="flex-1 min-w-0 rounded-full border border-border bg-background px-4 py-2.5 text-sm focus:outline-none focus:border-foreground/30 transition-colors"
+        />
+        <button
+          type="submit"
+          disabled={loading || !input.trim()}
+          className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-full bg-foreground text-background text-sm font-medium hover:opacity-90 active:scale-[0.97] transition-transform disabled:opacity-40"
+          style={accent ? { backgroundColor: accent } : undefined}
+        >
+          Ask →
+        </button>
+      </form>
     </div>
   );
 }

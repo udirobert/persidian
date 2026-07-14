@@ -198,10 +198,8 @@ function Hero() {
               ignoring.
             </h1>
             <p className="mt-6 sm:mt-8 text-base sm:text-lg text-muted max-w-lg leading-relaxed">
-              Four questions. No chatbot. Persidian diagnoses which compounding
-              risk is costing you most — late invoices, cold outreach, silent
-              code, stale data, escrow friction, or FX drag — and matches you
-              to the agent built to stop it.
+              Four questions. No chatbot. We match your costliest hidden risk
+              to the Persidian agent built to stop it.
             </p>
 
             <div id="diagnostic" className="mt-8 w-full">
