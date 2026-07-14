@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { DIAGNOSTIC_QUESTIONS, scoreAnswers, type DiagnosticAnswers } from "@/lib/diagnostic";
 import type { BaseProject } from "@/lib/products";
 
@@ -24,6 +24,17 @@ export function Diagnostic({ accent }: DiagnosticProps) {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<DiagnosticResult | null>(null);
   const [error, setError] = useState("");
+  const cardRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (started && cardRef.current) {
+      cardRef.current.scrollIntoView({
+        behavior: "smooth",
+        block: "nearest",
+        inline: "nearest",
+      });
+    }
+  }, [started, step, result]);
 
   const question = DIAGNOSTIC_QUESTIONS[step];
   const isLast = step === DIAGNOSTIC_QUESTIONS.length - 1;
@@ -116,6 +127,7 @@ export function Diagnostic({ accent }: DiagnosticProps) {
         accent={accent}
         liveScores={liveScores}
         onRestart={reset}
+        cardRef={cardRef}
       />
     );
   }
@@ -123,6 +135,7 @@ export function Diagnostic({ accent }: DiagnosticProps) {
   if (!started) {
     return (
       <div
+        ref={cardRef}
         className="rounded-2xl border border-border bg-background p-6 sm:p-8"
         data-enter
       >
@@ -156,6 +169,7 @@ export function Diagnostic({ accent }: DiagnosticProps) {
 
   return (
     <div
+      ref={cardRef}
       className="rounded-2xl border border-border bg-background p-6 sm:p-8"
       data-enter
       aria-busy={loading}
@@ -272,12 +286,14 @@ function ResultView({
   accent,
   liveScores,
   onRestart,
+  cardRef,
 }: {
   result: DiagnosticResult;
   answers: DiagnosticAnswers;
   accent?: string;
   liveScores: ReturnType<typeof scoreAnswers>;
   onRestart: () => void;
+  cardRef: React.RefObject<HTMLDivElement | null>;
 }) {
   const product = result.product;
 
@@ -293,6 +309,7 @@ function ResultView({
 
   return (
     <div
+      ref={cardRef}
       className="rounded-2xl border border-border bg-background p-6 sm:p-8"
       data-enter
     >
