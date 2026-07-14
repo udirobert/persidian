@@ -72,7 +72,7 @@ async function performDiagnose(answers: DiagnosticAnswers): Promise<DiagnoseResp
     if (llmReasoning) {
       result.reasoning = llmReasoning;
     }
-    agentSays = generateAgentSays(answers, result.product, result.confidence);
+    agentSays = generateAgentSays(answers, result.product);
   }
 
   return {

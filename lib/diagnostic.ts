@@ -260,19 +260,14 @@ export function generateTransitionQuip(timeline = "Later / exploring"): string {
 
 export function generateAgentSays(
   answers: DiagnosticAnswers,
-  product: BaseProject,
-  confidence: "high" | "medium" | "low"
+  product: BaseProject
 ): string {
-  const role = answers.role?.split("/")[0]?.trim().toLowerCase() ?? "your team";
-  const pain = answers.painPoints?.[0]?.toLowerCase() ?? "this pattern";
+  const role =
+    answers.role?.split("/")[0]?.trim() ?? "Your team";
+  const pain = answers.painPoints?.[0] ?? "this pattern";
   const timeline = answers.timeline ?? "Later / exploring";
 
-  const confidenceClause =
-    confidence === "high"
-      ? `This is a high-confidence match for ${role}.`
-      : `This is a ${confidence}-confidence match for ${role}.`;
-
-  return `${pick(patternQuips)} ${confidenceClause} ${pain} + ${product.name} = a clear next move. ${pick(
+  return `${pick(patternQuips)} ${role} + ${pain} + ${product.name} = a clear next move. ${pick(
     timelineQuips[timeline] ?? timelineQuips["Later / exploring"]
   )} ${pick(ctaQuips)}`;
 }

@@ -369,74 +369,108 @@ function ResultView({
       className="rounded-2xl border border-border bg-background p-6 sm:p-8"
       data-enter
     >
-      <p className="section-kicker text-muted mb-3">
-        Recommendation
+      <div className="flex items-center justify-between gap-4 mb-5">
+        <p className="section-kicker text-muted">Recommendation</p>
         {product && (
-          <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded-full bg-border text-[10px] sm:text-xs font-medium uppercase tracking-wider">
+          <span
+            className="inline-flex items-center px-2 py-0.5 rounded-full border text-[10px] sm:text-xs font-medium uppercase tracking-wider"
+            style={{ borderColor: product.accent, color: product.accent }}
+          >
             {confidenceLabel[result.confidence] ?? "Match"}
           </span>
         )}
-      </p>
+      </div>
 
       {product ? (
-        <>
-          <h3 className="text-2xl sm:text-3xl font-semibold tracking-tight leading-tight">
-            {product.name} — {product.thesisLabel}
-          </h3>
-          <p className="mt-2 text-muted leading-relaxed">{product.tagline}</p>
-          <p className="mt-4 text-foreground font-medium leading-relaxed">
-            {result.reasoning}
-          </p>
-          {product && result.agentSays && (
+        <div className="space-y-5">
+          <div
+            className="rounded-2xl border border-border p-5 sm:p-6"
+            style={{ borderTop: `3px solid ${product.accent}` }}
+          >
+            <h3 className="text-2xl sm:text-3xl font-semibold tracking-tight leading-tight">
+              {product.name}{" "}
+              <span className="text-muted">— {product.thesisLabel}</span>
+            </h3>
+            <p className="mt-2 text-sm sm:text-base text-muted leading-relaxed">
+              {product.tagline}
+            </p>
+          </div>
+
+          <div
+            className="rounded-xl bg-muted/30 p-5 border-l-4"
+            style={{ borderLeftColor: product.accent }}
+          >
+            <p className="text-[10px] sm:text-xs font-mono uppercase tracking-wider text-muted mb-1">
+              Why this fits
+            </p>
+            <p className="text-foreground font-medium leading-relaxed">
+              {result.reasoning}
+            </p>
+          </div>
+
+          {result.agentSays && (
             <ChatPanel
               product={product}
               answers={answers}
               accent={accent}
               initialMessage={result.agentSays}
-              className="mt-6"
+              className="rounded-2xl border border-border bg-muted/20 p-4 sm:p-5"
             />
           )}
-        </>
+
+          <div className="flex flex-wrap items-center gap-3">
+            <a
+              href={mailtoUrl}
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-background text-sm font-medium hover:opacity-90 active:scale-[0.97] transition-transform"
+              style={{ backgroundColor: accent || product.accent }}
+            >
+              Book a demo →
+            </a>
+            <a
+              href={`#${product.iconName}`}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-border text-sm font-medium hover:border-foreground/30 transition-colors"
+            >
+              See the case
+            </a>
+            <button
+              type="button"
+              onClick={onRestart}
+              className="text-sm font-medium text-muted hover:text-foreground transition-colors"
+            >
+              Start over
+            </button>
+          </div>
+
+          <ScoreBoard
+            scores={liveScores}
+            className="pt-6 border-t border-border"
+            limit={3}
+            showTooltips
+          />
+        </div>
       ) : (
         <>
           <h3 className="text-2xl sm:text-3xl font-semibold tracking-tight leading-tight">
             No single product is a clear match yet.
           </h3>
           <p className="mt-2 text-muted leading-relaxed">{result.reasoning}</p>
+          <div className="mt-6 flex flex-wrap items-center gap-3">
+            <a
+              href={mailtoUrl}
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-foreground text-background text-sm font-medium hover:opacity-90 active:scale-[0.97] transition-transform"
+            >
+              Book a demo →
+            </a>
+            <button
+              type="button"
+              onClick={onRestart}
+              className="text-sm font-medium text-muted hover:text-foreground transition-colors"
+            >
+              Start over
+            </button>
+          </div>
         </>
       )}
-
-      <div className="mt-6 flex flex-wrap items-center gap-3">
-        <a
-          href={mailtoUrl}
-          className="inline-flex items-center gap-2 px-5 py-3 rounded-full bg-foreground text-background text-sm font-medium hover:opacity-90 active:scale-[0.97] transition-transform"
-          style={accent ? { backgroundColor: accent } : undefined}
-        >
-          Book a demo →
-        </a>
-        {product && (
-          <a
-            href={`#${product.iconName}`}
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-full border border-border text-sm font-medium hover:border-foreground/30 transition-colors"
-          >
-            See the {product.name} case
-          </a>
-        )}
-        <button
-          type="button"
-          onClick={onRestart}
-          className="text-sm font-medium text-muted hover:text-foreground transition-colors"
-        >
-          Start over
-        </button>
-      </div>
-
-      <ScoreBoard
-        scores={liveScores}
-        className="mt-10 pt-8 border-t border-border"
-        limit={3}
-        showTooltips
-      />
 
       <p className="mt-6 text-xs text-muted">
         Or email directly at{" "}

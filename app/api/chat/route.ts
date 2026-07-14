@@ -1,4 +1,4 @@
-import { generateChatResponse } from "@/lib/llm";
+import { generateChatResponse, toShortReply } from "@/lib/llm";
 import { type DiagnosticAnswers } from "@/lib/diagnostic";
 import { PRODUCTS } from "@/lib/products";
 import { getClientIp, RateLimiter } from "@/lib/rate-limit";
@@ -12,6 +12,16 @@ function isStringArray(value: unknown): value is string[] {
 
 function sanitize(value: string): string {
   return value.trim().slice(0, 1000);
+}
+
+function isDemoIntent(message: string): boolean {
+  return /\b(demo|book|schedule|walkthrough|call|meeting|interested|set up|sign up|talk|speak|contact|reach out)\b/i.test(
+    message
+  );
+}
+
+function demoReply(productName?: string): string {
+  return `Happy to arrange a ${productName ?? "Persidian"} demo. Share your name, email, company, and role, and the Persidian team will reach out to book a time that works for you.`;
 }
 
 export async function POST(request: Request) {
@@ -59,14 +69,18 @@ export async function POST(request: Request) {
     (p) => p.iconName === productKey || p.name.toLowerCase() === productKey.toLowerCase()
   ) ?? null;
 
-  const reply = await generateChatResponse(message, product, answers);
+  if (isDemoIntent(message)) {
+    return NextResponse.json({ reply: demoReply(product?.name) });
+  }
 
-  if (!reply) {
+  const rawReply = await generateChatResponse(message, product, answers);
+
+  if (!rawReply) {
     return NextResponse.json(
       { error: "The concierge is unavailable right now. Please try again." },
       { status: 503 }
     );
   }
 
-  return NextResponse.json({ reply });
+  return NextResponse.json({ reply: toShortReply(rawReply) });
 }

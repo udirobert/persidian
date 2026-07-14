@@ -160,13 +160,34 @@ export async function generateReasoning(
   ]);
 }
 
+export function sanitizeChatReply(reply: string): string {
+  return reply
+    .replace(/\*\*(.*?)\*\*/g, "$1")
+    .replace(/__(.*?)__/g, "$1")
+    .replace(/^[\-*]\s+/gm, "")
+    .replace(/^\d+\.\s+/gm, "")
+    .replace(/\n{2,}/g, "\n\n")
+    .replace(/\n+/g, " ")
+    .trim();
+}
+
+export function toShortReply(reply: string, maxChars = 280): string {
+  const cleaned = sanitizeChatReply(reply);
+  if (cleaned.length <= maxChars) return cleaned;
+  const truncated = cleaned.slice(0, maxChars);
+  const lastPeriod = truncated.lastIndexOf(".");
+  return lastPeriod > 0
+    ? truncated.slice(0, lastPeriod + 1)
+    : truncated.trimEnd() + "…";
+}
+
 export async function generateChatResponse(
   message: string,
   product: BaseProject | null,
   answers: DiagnosticAnswers
 ): Promise<string | null> {
   const productContext = product
-    ? `Recommended product: ${product.name} — ${product.thesisLabel}. Tagline: ${product.tagline}. Product page: ${product.href}`
+    ? `Recommended product: ${product.name} — ${product.thesisLabel}. Short description: ${product.tagline}. Product page: ${product.href}`
     : "No specific product was recommended yet.";
 
   const diagnosticContext = `- Function: ${answers.role || "not provided"}
@@ -178,7 +199,14 @@ export async function generateChatResponse(
     [
       {
         role: "system",
-        content: `You are Persidian's business concierge. You help a visitor understand which Persidian agent fits their business. Be concise, confident, and helpful. Steer the conversation toward booking a demo when appropriate. If asked something unrelated to Persidian or its products, politely decline and redirect to Persidian.
+        content: `You are Persidian's business concierge. You help a visitor understand which Persidian agent fits their business.
+
+Rules:
+- Be concise: reply in 1-3 short sentences. Never use Markdown (no **bold**, no bullet points, no headings).
+- Do not repeat the product description from the prompt.
+- If they ask about the product, explain the fit in plain language.
+- When they show interest in a demo, do NOT ask for a preferred date/time. Instead, collect their contact details (name, email, company, role) so the Persidian team can reach out to arrange a time that suits them.
+- If asked something unrelated to Persidian or its products, politely decline and redirect to Persidian.
 
 ${productContext}
 
@@ -187,6 +215,6 @@ ${diagnosticContext}`,
       },
       { role: "user", content: message },
     ],
-    200
+    180
   );
 }
