@@ -1,5 +1,9 @@
 @import "tailwindcss";
 
+html {
+  scroll-behavior: smooth;
+}
+
 :root {
   /* Warm, restrained palette — same stone base as Sikizana so the sibling
      projects read as one family. Deliberately light: this is the flagship

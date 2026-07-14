@@ -14,6 +14,29 @@ const EMAIL = "hello@persidian.com";
 const wait = (ms: number) =>
   new Promise<void>((resolve) => setTimeout(resolve, ms));
 
+function smoothScrollToElement(id: string, offset = 80, duration = 1200) {
+  if (typeof window === "undefined") return;
+  const element = document.getElementById(id);
+  if (!element) return;
+
+  const targetY = element.getBoundingClientRect().top + window.scrollY - offset;
+  const startY = window.scrollY;
+  const diff = targetY - startY;
+  const startTime = performance.now();
+
+  function step(now: number) {
+    const elapsed = now - startTime;
+    const progress = Math.min(elapsed / duration, 1);
+    const ease = 1 - Math.pow(1 - progress, 3);
+    window.scrollTo(0, startY + diff * ease);
+    if (progress < 1) {
+      requestAnimationFrame(step);
+    }
+  }
+
+  requestAnimationFrame(step);
+}
+
 interface DiagnosticResult {
   product: BaseProject | null;
   reasoning: string;
@@ -44,16 +67,6 @@ export function Diagnostic({ accent }: DiagnosticProps) {
       document.documentElement.classList.remove("time-payoff-active");
     };
   }, []);
-
-  useEffect(() => {
-    if ((started || transition.show) && cardRef.current) {
-      cardRef.current.scrollIntoView({
-        behavior: "smooth",
-        block: "nearest",
-        inline: "nearest",
-      });
-    }
-  }, [started, step, result, transition.show]);
 
   const question = DIAGNOSTIC_QUESTIONS[step];
   const isLast = step === DIAGNOSTIC_QUESTIONS.length - 1;
@@ -346,6 +359,15 @@ function ResultView({
   cardRef: React.RefObject<HTMLDivElement | null>;
 }) {
   const product = result.product;
+  const [autoScrollEnabled, setAutoScrollEnabled] = useState(true);
+
+  useEffect(() => {
+    if (!product || !autoScrollEnabled) return;
+    const timer = setTimeout(() => {
+      smoothScrollToElement(product.iconName);
+    }, 8000);
+    return () => clearTimeout(timer);
+  }, [product, autoScrollEnabled]);
 
   const confidenceLabel: Record<string, string> = {
     high: "High-confidence match",
@@ -414,6 +436,7 @@ function ResultView({
               answers={answers}
               accent={accent}
               initialMessage={result.agentSays}
+              onUserMessage={() => setAutoScrollEnabled(false)}
               className="rounded-2xl border border-border bg-muted/20 p-4 sm:p-5"
             />
           )}
@@ -426,12 +449,13 @@ function ResultView({
             >
               Book a demo →
             </a>
-            <a
-              href={`#${product.iconName}`}
+            <button
+              type="button"
+              onClick={() => smoothScrollToElement(product.iconName)}
               className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-border text-sm font-medium hover:border-foreground/30 transition-colors"
             >
               See the case
-            </a>
+            </button>
             <button
               type="button"
               onClick={onRestart}
@@ -487,14 +511,18 @@ function ChatPanel({
   answers,
   accent,
   initialMessage,
+  onUserMessage,
   className = "",
 }: {
   product: BaseProject;
   answers: DiagnosticAnswers;
   accent?: string;
   initialMessage?: string;
+  onUserMessage?: () => void;
   className?: string;
 }) {
+  const MESSAGE_LIMIT = 10;
+
   const [messages, setMessages] = useState<
     { role: "user" | "assistant"; content: string }[]
   >(
@@ -504,12 +532,20 @@ function ChatPanel({
   );
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const limitReached = messages.length >= MESSAGE_LIMIT;
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  }, [messages, loading]);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const text = input.trim();
-    if (!text || loading) return;
+    if (!text || loading || limitReached) return;
 
+    onUserMessage?.();
     setMessages((prev) => [...prev, { role: "user", content: text }]);
     setInput("");
     setLoading(true);
@@ -550,7 +586,7 @@ function ChatPanel({
     <div className={`${className}`}>
       <p className="section-label text-muted mb-4">Ask the concierge</p>
       {messages.length > 0 && (
-        <div className="space-y-3 mb-4">
+        <div className="max-h-48 overflow-y-auto space-y-3 mb-4 pr-1">
           {messages.map((m, i) => (
             <div
               key={i}
@@ -567,25 +603,42 @@ function ChatPanel({
           {loading && (
             <p className="text-sm text-muted">Concierge is typing...</p>
           )}
+          <div ref={messagesEndRef} />
         </div>
       )}
-      <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row gap-2">
-        <input
-          type="text"
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          placeholder="What would you like to know about this recommendation?"
-          className="flex-1 min-w-0 rounded-full border border-border bg-background px-4 py-2.5 text-sm focus:outline-none focus:border-foreground/30 transition-colors"
-        />
-        <button
-          type="submit"
-          disabled={loading || !input.trim()}
-          className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-full bg-foreground text-background text-sm font-medium hover:opacity-90 active:scale-[0.97] transition-transform disabled:opacity-40"
-          style={accent ? { backgroundColor: accent } : undefined}
-        >
-          Ask →
-        </button>
-      </form>
+      {limitReached ? (
+        <p className="text-sm text-muted leading-relaxed">
+          You have reached the concierge message limit. Want to keep going?{" "}
+          <a
+            href={`mailto:${EMAIL}?subject=Persidian follow-up`}
+            className="underline underline-offset-4 hover:text-foreground transition-colors"
+          >
+            Email hello@persidian.com
+          </a>{" "}
+          or book a demo above.
+        </p>
+      ) : (
+        <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row gap-2">
+          <input
+            type="text"
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            placeholder="What would you like to know about this recommendation?"
+            className="flex-1 min-w-0 rounded-full border border-border bg-background px-4 py-2.5 text-sm focus:outline-none focus:border-foreground/30 transition-colors"
+          />
+          <button
+            type="submit"
+            disabled={loading || !input.trim()}
+            className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-full bg-foreground text-background text-sm font-medium hover:opacity-90 active:scale-[0.97] transition-transform disabled:opacity-40"
+            style={accent ? { backgroundColor: accent } : undefined}
+          >
+            Ask →
+          </button>
+        </form>
+      )}
+      <p className="mt-3 text-xs text-muted">
+        We only use what you share to arrange a demo. No spam, no third parties.
+      </p>
     </div>
   );
 }
