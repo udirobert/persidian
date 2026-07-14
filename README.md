@@ -32,6 +32,19 @@ CONTACT_TO_EMAIL=hello@persidian.com
 CONTACT_FROM_EMAIL="Persidian <hello@persidian.com>"
 ```
 
+## Product vision
+
+The site is evolving from a static portfolio into an autonomous business concierge. A visitor describes their business, the agent diagnoses which compounding risk is most expensive, and routes them to the right Persidian product or demo.
+
+Roadmap:
+
+1. **Conversational router** — replace the contact form with a short diagnostic chat. The backend returns a structured product recommendation and pre-fills the next step (deck request, demo booking, or product link).
+2. **Read-only insight** — for one product (likely Sikizana/Xero first), let a user connect a data source and generate a free, personalized audit that proves value before they buy.
+3. **Product onboarding orchestration** — the concierge spins up the right product workspace and passes context through, while each product keeps its own auth/integrations.
+4. **Ongoing autonomous agent** — scheduled check-ins and proactive recommendations based on live business signals, with explicit human approval gates.
+
+`app/api/contact/route.ts` is the current server-side handoff point; the next step is to add an `/api/agent` route that scores fit across the six products.
+
 ## Learn More
 
 To learn more about Next.js, take a look at the following resources:
