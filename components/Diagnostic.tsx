@@ -11,6 +11,9 @@ import type { BaseProject } from "@/lib/products";
 
 const EMAIL = "hello@persidian.com";
 
+const wait = (ms: number) =>
+  new Promise<void>((resolve) => setTimeout(resolve, ms));
+
 interface DiagnosticResult {
   product: BaseProject | null;
   reasoning: string;
@@ -62,7 +65,7 @@ export function Diagnostic({ accent }: DiagnosticProps) {
     | string[]
     | undefined;
 
-  const handleSelect = (value: string) => {
+  const handleSelect = async (value: string) => {
     setError("");
     if (question.type === "single") {
       const nextAnswers: DiagnosticAnswers = { ...answers, [question.id]: value };
@@ -73,11 +76,9 @@ export function Diagnostic({ accent }: DiagnosticProps) {
           quip: generateTransitionQuip(nextAnswers.timeline),
         });
         document.documentElement.classList.add("time-payoff-active");
-        setTimeout(() => {
-          submit(nextAnswers);
-          setTransition({ show: false, quip: "" });
-          document.documentElement.classList.remove("time-payoff-active");
-        }, 1400);
+        await Promise.all([submit(nextAnswers), wait(1400)]);
+        setTransition({ show: false, quip: "" });
+        document.documentElement.classList.remove("time-payoff-active");
       } else {
         setStep((s) => s + 1);
       }
@@ -97,7 +98,7 @@ export function Diagnostic({ accent }: DiagnosticProps) {
       ? typeof currentAnswer === "string"
       : Array.isArray(currentAnswer) && currentAnswer.length > 0;
 
-  const handleNext = () => {
+  const handleNext = async () => {
     if (!canAdvance) return;
     if (isLast) {
       setTransition({
@@ -105,11 +106,9 @@ export function Diagnostic({ accent }: DiagnosticProps) {
         quip: generateTransitionQuip(answers.timeline),
       });
       document.documentElement.classList.add("time-payoff-active");
-      setTimeout(() => {
-        submit();
-        setTransition({ show: false, quip: "" });
-        document.documentElement.classList.remove("time-payoff-active");
-      }, 1400);
+      await Promise.all([submit(), wait(1400)]);
+      setTransition({ show: false, quip: "" });
+      document.documentElement.classList.remove("time-payoff-active");
     } else {
       setStep((s) => s + 1);
     }
@@ -388,15 +387,14 @@ function ResultView({
           <p className="mt-4 text-foreground font-medium leading-relaxed">
             {result.reasoning}
           </p>
-          {result.agentSays && (
-            <div className="mt-6 rounded-2xl border border-border bg-muted/30 p-4 sm:p-5">
-              <p className="text-[10px] sm:text-xs font-mono uppercase tracking-wider text-muted mb-1">
-                Agent says
-              </p>
-              <p className="text-foreground font-medium leading-relaxed">
-                {result.agentSays}
-              </p>
-            </div>
+          {product && result.agentSays && (
+            <ChatPanel
+              product={product}
+              answers={answers}
+              accent={accent}
+              initialMessage={result.agentSays}
+              className="mt-6"
+            />
           )}
         </>
       ) : (
@@ -440,8 +438,6 @@ function ResultView({
         showTooltips
       />
 
-      {product && <ChatPanel product={product} answers={answers} accent={accent} />}
-
       <p className="mt-6 text-xs text-muted">
         Or email directly at{" "}
         <a href={`mailto:${EMAIL}`} className="underline underline-offset-4">
@@ -456,14 +452,22 @@ function ChatPanel({
   product,
   answers,
   accent,
+  initialMessage,
+  className = "",
 }: {
   product: BaseProject;
   answers: DiagnosticAnswers;
   accent?: string;
+  initialMessage?: string;
+  className?: string;
 }) {
   const [messages, setMessages] = useState<
     { role: "user" | "assistant"; content: string }[]
-  >([]);
+  >(
+    initialMessage
+      ? [{ role: "assistant", content: initialMessage }]
+      : []
+  );
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -509,7 +513,7 @@ function ChatPanel({
   };
 
   return (
-    <div className="mt-10 pt-8 border-t border-border">
+    <div className={`${className}`}>
       <p className="section-label text-muted mb-4">Ask the concierge</p>
       {messages.length > 0 && (
         <div className="space-y-3 mb-4">
