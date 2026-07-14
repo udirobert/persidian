@@ -51,3 +51,12 @@ export function WeaveIcon() {
     </svg>
   );
 }
+
+export function DiversifiIcon() {
+  return (
+    <svg {...ICON_PROPS}>
+      <path d="M16 3l12 5v9c0 8-5 12-12 15-7-3-12-7-12-15V8l12-5Z" />
+      <path d="M10 16l4 4 8-8" />
+    </svg>
+  );
+}

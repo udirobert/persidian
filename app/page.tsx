@@ -10,6 +10,7 @@ import {
   PulseIcon,
   WatcherIcon,
   WeaveIcon,
+  DiversifiIcon,
 } from "@/components/ProductIcon";
 import Image from "next/image";
 
@@ -110,6 +111,22 @@ const PROJECTS: Project[] = [
     muted: "#5f6e6a",
     fontClass: "",
   },
+  {
+    number: "06",
+    name: "Diversifi",
+    href: "https://diversifi.persidian.com",
+    repo: "https://github.com/thisyearnofear/diversify",
+    tagline:
+      "Risk-aware, values-driven treasury management. Quantifies FX drag on working capital and autonomously flattens it — every decision recorded on-chain with AI reasoning anchored to 0G.",
+    thesisLabel: "Currency guarded",
+    icon: DiversifiIcon,
+    shot: "/shots/diversifi.png",
+    bg: "#f0f4f9",
+    fg: "#0f172a",
+    accent: "#2563eb",
+    muted: "#64748b",
+    fontClass: "",
+  },
 ];
 
 const CONNECT_URL = "https://x.com/udirobert";
@@ -204,6 +221,22 @@ export default function Home() {
               <WeftWhat key="w-what" />,
               <WeftVision key="w-vision" />,
               <WeftProof key="w-proof" />,
+            ]}
+          </PinnedSection>
+        </section>
+
+        <section aria-label="Diversifi">
+          <PinnedSection
+            id="diversifi"
+            style={{
+              background: PROJECTS[5].bg,
+              color: PROJECTS[5].fg,
+            }}
+          >
+            {[
+              <DiversifiWhat key="x-what" />,
+              <DiversifiVision key="x-vision" />,
+              <DiversifiProof key="x-proof" />,
             ]}
           </PinnedSection>
         </section>
@@ -937,6 +970,99 @@ function WeftProof() {
         <li>
           Full surfaces: sponsor dashboard, builder profile, verification
           explorer, and agent operations console.
+        </li>
+      </ul>
+    </BeatLayout>
+  );
+}
+
+/* ---- Diversifi ---- */
+function DiversifiWhat() {
+  const p = PROJECTS[5];
+  return (
+    <BeatLayout
+      kicker="06 / Diversifi"
+      label="What it does"
+      title="FX-risk intelligence and autonomous treasury protection."
+      accent={p.accent}
+      muted={p.muted}
+      href={p.href}
+      repo={p.repo}
+      name={p.name}
+    >
+      <p>
+        DiversiFi quantifies the currency drag on working capital for businesses
+        that earn in one currency and must purchase in another. The Guardian agent
+        routes capital between Celo/Mento local stablecoins, Arbitrum deep
+        liquidity, and HashKey regulated-market savings, then executes protection
+        automatically — every decision recorded on the chain where the money moves.
+      </p>
+      <p>
+        AI reasoning is anchored to 0G for verifiable evidence, and premium
+        intelligence flows are gated by x402 nanopayments. The retail savings app
+        is top-of-funnel; the SME business intelligence layer is the real product.
+      </p>
+    </BeatLayout>
+  );
+}
+
+function DiversifiVision() {
+  const p = PROJECTS[5];
+  return (
+    <BeatLayout
+      kicker="06 / Diversifi"
+      label="The vision"
+      title="Every cross-currency business gets an autonomous treasury guard."
+      accent={p.accent}
+      muted={p.muted}
+      href={p.href}
+      repo={p.repo}
+      name={p.name}
+    >
+      <p>
+        No current player combines FX-risk quantification with autonomous execution.
+        DiversiFi makes the moat structural: a philosophy-driven values system
+        creates identity-based retention, while the Guardian turns working-capital
+        risk into a managed, auditable operating layer.
+      </p>
+      <p>
+        The expansion is from the retail saver who protects a wallet to the Ghanaian
+        importer, the US retailer sourcing from Europe, and the UK business paying
+        US suppliers — any company whose margins move when exchange rates do.
+      </p>
+    </BeatLayout>
+  );
+}
+
+function DiversifiProof() {
+  const p = PROJECTS[5];
+  return (
+    <BeatLayout
+      kicker="06 / Diversifi"
+      label="The proof"
+      title="Live on Celo, Arbitrum and 0G mainnets with verified ledgers."
+      accent={p.accent}
+      muted={p.muted}
+      href={p.href}
+      repo={p.repo}
+      name={p.name}
+    >
+      <ul className="space-y-3 list-disc pl-5 marker:text-accent">
+        <li>
+          Chain-aware RecommendationLedgers deployed on Celo Mainnet (savings),
+          Arbitrum Mainnet (yield), and 0G Mainnet (evidence anchor).
+        </li>
+        <li>
+          ERC-8004 agent identity and verified contracts on Celoscan, Arbiscan, and
+          0G ChainScan.
+        </li>
+        <li>
+          x402 nanopayment settlement rail for paid intelligence, with live
+          settlement metrics.
+        </li>
+        <li>
+          In-app Verifiable AI dashboard showing evidence CIDs, serving-model IDs,
+          and chain receipts.
         </li>
       </ul>
     </BeatLayout>
