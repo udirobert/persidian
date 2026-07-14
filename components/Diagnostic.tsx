@@ -38,8 +38,11 @@ export function Diagnostic({ accent }: DiagnosticProps) {
   const handleSelect = (value: string) => {
     setError("");
     if (question.type === "single") {
-      setAnswers((prev) => ({ ...prev, [question.id]: value }));
-      if (!isLast) {
+      const nextAnswers: DiagnosticAnswers = { ...answers, [question.id]: value };
+      setAnswers(nextAnswers);
+      if (isLast) {
+        submit(nextAnswers);
+      } else {
         setStep((s) => s + 1);
       }
     } else {
@@ -71,14 +74,18 @@ export function Diagnostic({ accent }: DiagnosticProps) {
     setStep((s) => Math.max(0, s - 1));
   };
 
-  const submit = async () => {
+  const submit = async (answersOverride?: DiagnosticAnswers) => {
+    const payload = answersOverride ?? answers;
+    if (!payload.role && !payload.painPoints?.length && !payload.tools?.length) {
+      return;
+    }
     setLoading(true);
     setError("");
     try {
       const response = await fetch("/api/diagnose", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(answers),
+        body: JSON.stringify(payload),
       });
       const data = (await response.json()) as DiagnosticResult & { error?: string };
       if (!response.ok) {

@@ -181,8 +181,8 @@ function Hero() {
   return (
     <section className="relative min-h-screen flex flex-col justify-center px-5 sm:px-10 pt-32 pb-24 bg-background text-foreground">
       <div className="max-w-5xl mx-auto w-full">
-        <div className="flex flex-col lg:flex-row items-center gap-10 lg:gap-20">
-          <div className="max-w-2xl order-2 lg:order-1" data-enter style={{ "--enter-delay": "0ms" } as React.CSSProperties}>
+        <div className="flex flex-col lg:flex-row items-start gap-10 lg:gap-16">
+          <div className="w-full max-w-2xl" data-enter style={{ "--enter-delay": "0ms" } as React.CSSProperties}>
             <p className="text-xs sm:text-sm font-mono uppercase tracking-[0.1em] sm:tracking-[0.15em] mb-5 whitespace-nowrap">
               <span className="text-accent font-bold">PERSI</span>
               <span className="text-muted">STENCE</span>
@@ -191,37 +191,35 @@ function Hero() {
               <span className="text-accent font-bold">DIAN</span>
             </p>
             <h1 className="text-4xl sm:text-6xl lg:text-7xl font-semibold tracking-tight leading-[1.05] text-foreground">
-              Autonomous agents
+              Find the risk your
               <br />
-              are the new
+              business is
               <br />
-              operating layer.
+              ignoring.
             </h1>
             <p className="mt-6 sm:mt-8 text-base sm:text-lg text-muted max-w-lg leading-relaxed">
-              First, software recorded work. Then it automated tasks. Now it
-              observes, decides, and acts — continuously. Persidian diagnoses
-              which compounding risk is costing your business most, then
-              matches you to the agent built to stop it. A portfolio of live
-              products, one diagnostic concierge.
+              Four questions. No chatbot. Persidian diagnoses which compounding
+              risk is costing you most — late invoices, cold outreach, silent
+              code, stale data, escrow friction, or FX drag — and matches you
+              to the agent built to stop it.
             </p>
-            <div className="mt-8 flex flex-wrap items-center gap-4" data-enter style={{ "--enter-delay": "80ms" } as React.CSSProperties}>
-              <a
-                href="#studio"
-                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-full bg-foreground text-background text-sm font-medium hover:opacity-90 active:scale-[0.97] transition-transform"
-              >
-                Run a business X-ray
-              </a>
+
+            <div id="diagnostic" className="mt-8 w-full">
+              <Diagnostic />
+            </div>
+
+            <div className="mt-6">
               <a
                 href="#portfolio"
-                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-full border border-border text-sm font-medium hover:border-foreground/30 transition-colors"
+                className="text-sm font-medium text-muted hover:text-foreground transition-colors"
               >
-                View the portfolio
+                View the portfolio →
               </a>
             </div>
           </div>
 
           <div
-            className="w-44 h-44 sm:w-60 sm:h-60 lg:w-72 lg:h-72 shrink-0 order-1 lg:order-2"
+            className="w-44 h-44 sm:w-60 sm:h-60 lg:w-72 lg:h-72 shrink-0"
             data-enter
             style={{ "--enter-delay": "60ms" } as React.CSSProperties}
           >
@@ -1011,10 +1009,6 @@ function TheStudio() {
             <Signal label="Deployment model" value="Docker / VPS / Cloud" />
             <Signal label="Studio status" value="Active" />
           </div>
-        </div>
-
-        <div className="mt-16 max-w-2xl" data-enter style={{ "--enter-delay": "120ms" } as React.CSSProperties}>
-          <Diagnostic />
         </div>
       </div>
     </section>
