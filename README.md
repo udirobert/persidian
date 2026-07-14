@@ -64,3 +64,7 @@ The site deploys to a VPS (nuncio-vultr) behind a Coolify-managed Traefik networ
 ```
 
 Configuration lives in `docker-compose.vps.yml`; the container is served at persidian.com and www.persidian.com.
+
+### Port policy
+
+The container does **not** publish a host port. Traefik routes to it directly over the shared `coolify` Docker network, so there is no risk of colliding with other projects that happen to use port 3000 internally. The only port Traefik needs is the one declared in the service label (`3000` inside the container), which is isolated per container.

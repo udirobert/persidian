@@ -8,8 +8,9 @@ services:
     build: .
     container_name: persidian-web
     restart: unless-stopped
-    ports:
-      - "127.0.0.1:13002:3000"
+    # No host port is published. Traefik routes directly to this container
+    # over the coolify Docker network, so there is no risk of colliding with
+    # other projects that also happen to use port 3000 internally.
     networks:
       - coolify
     labels:
