@@ -42,14 +42,24 @@ health_check() {
   done
 }
 
+cleanup() {
+  echo ""
+  echo "→ Cleaning up old Docker images and build cache..."
+  ssh "$REMOTE" "sudo docker image prune -f --filter dangling=true >/dev/null 2>&1 || true"
+  ssh "$REMOTE" "sudo docker builder prune -f --keep-storage 5GB >/dev/null 2>&1 || true"
+  echo "  ✓ Cleanup complete"
+}
+
 case "$TARGET" in
   build)
     rebuild
     health_check
+    cleanup
     ;;
   all|*)
     git_pull_vps
     rebuild
     health_check
+    cleanup
     ;;
 esac
