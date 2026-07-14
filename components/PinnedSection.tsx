@@ -19,7 +19,9 @@ interface PinnedSectionProps {
  * feels trapped and nobody gets motion sickness.
  *
  * No heavy animation libraries — just a throttled scroll listener,
- * CSS custom properties, and transitions.
+ * CSS custom properties, and transitions. On mobile (narrow viewports)
+ * or reduced-motion preferences, the section falls back to a normal
+ * stacked layout.
  */
 export function PinnedSection({
   id,
@@ -43,8 +45,20 @@ export function PinnedSection({
     () => false
   );
 
+  const isNarrow = useSyncExternalStore(
+    (callback) => {
+      const mq = window.matchMedia("(max-width: 640px)");
+      mq.addEventListener("change", callback);
+      return () => mq.removeEventListener("change", callback);
+    },
+    () => window.matchMedia("(max-width: 640px)").matches,
+    () => false
+  );
+
+  const disablePinning = prefersReducedMotion || isNarrow;
+
   useEffect(() => {
-    if (prefersReducedMotion) return;
+    if (disablePinning) return;
 
     const wrapper = wrapperRef.current;
     if (!wrapper) return;
@@ -82,10 +96,10 @@ export function PinnedSection({
       window.removeEventListener("scroll", handleScroll);
       if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
     };
-  }, [prefersReducedMotion, beats.length]);
+  }, [disablePinning, beats.length]);
 
-  // Reduced motion / unsupported: render as a normal multi-section block.
-  if (prefersReducedMotion) {
+  // Reduced motion or narrow viewport: render as a normal stacked layout.
+  if (disablePinning) {
     return (
       <div id={id} className={`${className}`} style={style}>
         {beats.map((beat, i) => (
@@ -120,6 +134,7 @@ export function PinnedSection({
               data-active={isActive}
               data-direction={isPast ? "past" : "future"}
               aria-hidden={!isActive}
+              inert={!isActive}
             >
               <div className="w-full max-w-5xl mx-auto">{beat}</div>
             </div>

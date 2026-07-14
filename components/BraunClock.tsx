@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState, forwardRef } from "react";
 
 const CENTER = 100;
 const FACE_R = 96;
@@ -40,21 +40,19 @@ function Ticks() {
   return <>{marks}</>;
 }
 
-function Hand({
-  angle,
-  length,
-  width,
-  color,
-  opacity = 1,
-}: {
-  angle: number;
-  length: number;
-  width: number;
-  color: string;
-  opacity?: number;
-}) {
+const Hand = forwardRef<
+  SVGLineElement,
+  {
+    length: number;
+    width: number;
+    color: string;
+    opacity?: number;
+    defaultAngle?: number;
+  }
+>(({ length, width, color, opacity = 1, defaultAngle = 0 }, ref) => {
   return (
     <line
+      ref={ref}
       x1={CENTER}
       y1={CENTER}
       x2={CENTER}
@@ -63,34 +61,57 @@ function Hand({
       strokeWidth={width}
       strokeLinecap="round"
       opacity={opacity}
-      transform={`rotate(${angle} ${CENTER} ${CENTER})`}
+      transform={`rotate(${defaultAngle} ${CENTER} ${CENTER})`}
     />
   );
-}
+});
+Hand.displayName = "ClockHand";
 
 /**
  * A working analog clock in the Braun / Dieter Rams idiom — stark face,
  * baton indices, no numerals, one signature orange second hand. This is
  * the hero centerpiece, not a decoration: it's real, ticking, local time.
- * Rendered static (12:00) until mount to avoid a server/client mismatch.
+ * Rendered static (12:00) until mount to avoid a server/client mismatch;
+ * after mount the hands are driven by requestAnimationFrame for smooth,
+ * sub-second motion.
  */
 export function BraunClock({ className = "w-full h-full" }: { className?: string }) {
-  const [now, setNow] = useState<Date | null>(null);
+  const [mounted, setMounted] = useState(false);
+  const hourRef = useRef<SVGLineElement>(null);
+  const minuteRef = useRef<SVGLineElement>(null);
+  const secondRef = useRef<SVGLineElement>(null);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    setNow(new Date());
-    const id = setInterval(() => setNow(new Date()), 1000);
-    return () => clearInterval(id);
+    setMounted(true);
+
+    let rafId: number;
+    const update = () => {
+      const now = new Date();
+      const ms = now.getMilliseconds();
+      const seconds = now.getSeconds() + ms / 1000;
+      const minutes = now.getMinutes() + seconds / 60;
+      const hours = (now.getHours() % 12) + minutes / 60;
+
+      hourRef.current?.setAttribute(
+        "transform",
+        `rotate(${(hours * 30).toFixed(3)} ${CENTER} ${CENTER})`
+      );
+      minuteRef.current?.setAttribute(
+        "transform",
+        `rotate(${(minutes * 6).toFixed(3)} ${CENTER} ${CENTER})`
+      );
+      secondRef.current?.setAttribute(
+        "transform",
+        `rotate(${(seconds * 6).toFixed(3)} ${CENTER} ${CENTER})`
+      );
+
+      rafId = requestAnimationFrame(update);
+    };
+
+    rafId = requestAnimationFrame(update);
+    return () => cancelAnimationFrame(rafId);
   }, []);
-
-  const seconds = now?.getSeconds() ?? 0;
-  const minutes = now?.getMinutes() ?? 0;
-  const hours = now ? now.getHours() % 12 : 0;
-
-  const secondAngle = seconds * 6;
-  const minuteAngle = minutes * 6 + seconds * 0.1;
-  const hourAngle = hours * 30 + minutes * 0.5;
 
   return (
     <div
@@ -102,14 +123,14 @@ export function BraunClock({ className = "w-full h-full" }: { className?: string
     >
       <svg width="100%" height="100%" viewBox="0 0 200 200">
         <Ticks />
-        <Hand angle={hourAngle} length={48} width={4.5} color="var(--foreground)" />
-        <Hand angle={minuteAngle} length={72} width={3} color="var(--foreground)" />
+        <Hand ref={hourRef} length={48} width={4.5} color="var(--foreground)" />
+        <Hand ref={minuteRef} length={72} width={3} color="var(--foreground)" />
         <Hand
-          angle={secondAngle}
+          ref={secondRef}
           length={78}
           width={1.5}
           color="var(--accent)"
-          opacity={now ? 1 : 0}
+          opacity={mounted ? 1 : 0}
         />
         <circle cx={CENTER} cy={CENTER} r="4" fill="var(--foreground)" />
         <circle cx={CENTER} cy={CENTER} r="2" fill="var(--accent)" />

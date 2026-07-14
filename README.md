@@ -20,6 +20,18 @@ You can start editing the page by modifying `app/page.tsx`. The page auto-update
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to load [Fraunces](https://fonts.google.com/specimen/Fraunces) for display and body text and [JetBrains Mono](https://fonts.google.com/specimen/JetBrains+Mono) for kickers and labels.
 
+## Contact form
+
+The contact form posts to `app/api/contact/route.ts`, which validates the submission and either sends via Resend (if configured) or returns a composed `mailto` link plus the message body. The client then offers copy-to-clipboard and mailto fallbacks, so the form never silently fails when no mail client is installed.
+
+Copy `.env.example` to `.env.local` and fill in the values to enable server-side email delivery:
+
+```bash
+RESEND_API_KEY=re_...
+CONTACT_TO_EMAIL=hello@persidian.com
+CONTACT_FROM_EMAIL="Persidian <hello@persidian.com>"
+```
+
 ## Learn More
 
 To learn more about Next.js, take a look at the following resources:
