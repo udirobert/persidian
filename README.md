@@ -32,9 +32,14 @@ CONTACT_FROM_EMAIL="Persidian <hello@persidian.com>"
 
 # LLM reasoning for the Business X-ray diagnostic
 OPENROUTER_API_KEY=sk-or-v1-...
-OPENROUTER_MODEL="tencent/hy3:free"
+OPENROUTER_MODEL="tencent/hy3"
 OPENROUTER_SITE_URL="https://persidian.com"
 OPENROUTER_SITE_NAME="Persidian"
+
+# NVIDIA NIM fallback LLM reasoning
+NVIDIA_API_KEY=nvapi-...
+NVIDIA_MODEL="nvidia/nemotron-3-ultra-550b-a55b"
+NVIDIA_BASE_URL="https://integrate.api.nvidia.com/v1"
 ```
 
 ### Contact form
@@ -99,3 +104,22 @@ Configuration lives in `docker-compose.vps.yml`; the container is served at pers
 ### Port policy
 
 The container does **not** publish a host port. Traefik routes to it directly over the shared `coolify` Docker network, so there is no risk of colliding with other projects that happen to use port 3000 internally. The only port Traefik needs is the one declared in the service label (`3000` inside the container), which is isolated per container.
+
+### Production environment
+
+On the VPS, create `~/persidian/.env` with the same variables as `.env.local`. `docker-compose.vps.yml` loads it via `env_file`, so the Next.js container receives the API keys at runtime. The `.env` file is gitignored and excluded from the Docker build context by `.dockerignore`.
+
+### Disk-space management
+
+Docker images, build cache, and container logs are the usual culprits. The setup prevents bloat in three ways:
+
+1. **Capped logs** — `docker-compose.vps.yml` limits each container to 10 MB × 3 rotated, compressed log files (`max-size`, `max-file`, `compress`).
+2. **Post-deploy cleanup** — `deploy.sh` runs `docker image prune -f` for dangling images and `docker builder prune -f --keep-storage 5GB` after every deploy.
+3. **Multi-stage build** — `Dockerfile` only copies the standalone output into the runner image, not the full `node_modules` or source tree.
+
+You can still inspect usage manually on the host:
+
+```bash
+sudo docker system df
+sudo docker builder du
+```
