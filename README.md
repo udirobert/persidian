@@ -45,6 +45,16 @@ Roadmap:
 
 `app/api/contact/route.ts` is the current server-side handoff point; the next step is to add an `/api/agent` route that scores fit across the six products.
 
+### Design direction
+
+The concierge should not feel like a generic chatbot. Instead, it should surface as a focused **Business X-ray**: a short diagnostic that asks structured questions, reveals a live risk scoreboard across the six Persidian products, and produces a designed recommendation card with a clear next action.
+
+Inspiration for the interaction model:
+
+- [agno-agi/agent-ui](https://github.com/agno-agi/agent-ui) — showing agent reasoning, tool calls, and evidence rather than hiding them behind chat bubbles.
+- [livekit/components-js/packages/shadcn](https://github.com/livekit/components-js/tree/main/packages/shadcn) — real-time, voice-first agent UI components (visualizers, transcripts, session state). Voice is an optional future layer once the text-based diagnostic converts.
+- [flutter/genui](https://github.com/flutter/genui/blob/main/README.md) — generative UI / A2UI: the backend returns structured JSON that the frontend renders as interactive components, instead of returning walls of text.
+
 ## Learn More
 
 To learn more about Next.js, take a look at the following resources:

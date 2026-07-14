@@ -1,0 +1,347 @@
+"use client";
+
+import { useMemo, useState } from "react";
+import { DIAGNOSTIC_QUESTIONS, scoreAnswers, type DiagnosticAnswers } from "@/lib/diagnostic";
+import type { BaseProject } from "@/lib/products";
+
+const EMAIL = "hello@persidian.com";
+
+interface DiagnosticResult {
+  product: BaseProject | null;
+  reasoning: string;
+  confidence: "high" | "medium" | "low";
+  scores: { key: string; name: string; percentage: number; score: number }[];
+}
+
+interface DiagnosticProps {
+  accent?: string;
+}
+
+export function Diagnostic({ accent }: DiagnosticProps) {
+  const [started, setStarted] = useState(false);
+  const [step, setStep] = useState(0);
+  const [answers, setAnswers] = useState<DiagnosticAnswers>({});
+  const [loading, setLoading] = useState(false);
+  const [result, setResult] = useState<DiagnosticResult | null>(null);
+  const [error, setError] = useState("");
+
+  const question = DIAGNOSTIC_QUESTIONS[step];
+  const isLast = step === DIAGNOSTIC_QUESTIONS.length - 1;
+
+  const liveScores = useMemo(() => scoreAnswers(answers), [answers]);
+
+  const currentAnswer = answers[question.id as keyof DiagnosticAnswers] as
+    | string
+    | string[]
+    | undefined;
+
+  const handleSelect = (value: string) => {
+    setError("");
+    if (question.type === "single") {
+      setAnswers((prev) => ({ ...prev, [question.id]: value }));
+      if (!isLast) {
+        setStep((s) => s + 1);
+      }
+    } else {
+      setAnswers((prev) => {
+        const arr = ((prev[question.id as keyof DiagnosticAnswers] as string[]) ?? []);
+        const next = arr.includes(value)
+          ? arr.filter((v) => v !== value)
+          : [...arr, value];
+        return { ...prev, [question.id]: next };
+      });
+    }
+  };
+
+  const canAdvance =
+    question.type === "single"
+      ? typeof currentAnswer === "string"
+      : Array.isArray(currentAnswer) && currentAnswer.length > 0;
+
+  const handleNext = () => {
+    if (!canAdvance) return;
+    if (isLast) {
+      submit();
+    } else {
+      setStep((s) => s + 1);
+    }
+  };
+
+  const handleBack = () => {
+    setStep((s) => Math.max(0, s - 1));
+  };
+
+  const submit = async () => {
+    setLoading(true);
+    setError("");
+    try {
+      const response = await fetch("/api/diagnose", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(answers),
+      });
+      const data = (await response.json()) as DiagnosticResult & { error?: string };
+      if (!response.ok) {
+        setError(data.error || "Something went wrong. Please try again.");
+        return;
+      }
+      setResult(data);
+    } catch {
+      setError("Network error. Please check your connection and try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const reset = () => {
+    setStarted(false);
+    setStep(0);
+    setAnswers({});
+    setResult(null);
+    setError("");
+  };
+
+  if (result) {
+    return (
+      <ResultView
+        result={result}
+        accent={accent}
+        liveScores={liveScores}
+        onRestart={reset}
+      />
+    );
+  }
+
+  if (!started) {
+    return (
+      <div
+        className="rounded-2xl border border-border bg-background p-6 sm:p-8"
+        data-enter
+      >
+        <p className="section-kicker text-muted mb-3">Business X-ray</p>
+        <h3 className="text-2xl sm:text-3xl font-semibold tracking-tight leading-tight">
+          Find the compounding risk your business is ignoring.
+        </h3>
+        <p className="mt-4 text-muted leading-relaxed">
+          Four structured questions. No chatbot. We surface which Persidian
+          product addresses your most expensive hidden risk.
+        </p>
+        <div className="mt-6 flex flex-wrap items-center gap-3">
+          <button
+            type="button"
+            onClick={() => setStarted(true)}
+            className="inline-flex items-center gap-2 px-5 py-3 rounded-full bg-foreground text-background text-sm font-medium hover:opacity-90 active:scale-[0.97] transition-transform"
+            style={accent ? { backgroundColor: accent } : undefined}
+          >
+            Start the X-ray →
+          </button>
+          <a
+            href={`mailto:${EMAIL}`}
+            className="text-sm font-medium text-muted hover:text-foreground transition-colors"
+          >
+            Or email {EMAIL}
+          </a>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div
+      className="rounded-2xl border border-border bg-background p-6 sm:p-8"
+      data-enter
+      aria-busy={loading}
+    >
+      <div className="flex items-center justify-between mb-6">
+        <p className="section-kicker text-muted">
+          Question {step + 1} / {DIAGNOSTIC_QUESTIONS.length}
+        </p>
+        {step > 0 && (
+          <button
+            type="button"
+            onClick={handleBack}
+            className="text-xs font-medium text-muted hover:text-foreground transition-colors"
+          >
+            Back
+          </button>
+        )}
+      </div>
+
+      <h3 className="text-xl sm:text-2xl font-semibold tracking-tight leading-tight mb-5">
+        {question.label}
+      </h3>
+
+      <div className="flex flex-wrap gap-2 mb-6">
+        {question.options.map((option) => {
+          const selected =
+            question.type === "single"
+              ? currentAnswer === option
+              : Array.isArray(currentAnswer) && currentAnswer.includes(option);
+          return (
+            <button
+              key={option}
+              type="button"
+              onClick={() => handleSelect(option)}
+              className={`px-4 py-2.5 rounded-full border text-sm font-medium transition-all ${
+                selected
+                  ? "bg-foreground text-background border-foreground"
+                  : "border-border text-foreground hover:border-foreground/30"
+              }`}
+              aria-pressed={selected}
+            >
+              {option}
+            </button>
+          );
+        })}
+      </div>
+
+      {question.type === "multi" && (
+        <button
+          type="button"
+          onClick={handleNext}
+          disabled={!canAdvance}
+          className="inline-flex items-center gap-2 px-5 py-3 rounded-full bg-foreground text-background text-sm font-medium hover:opacity-90 active:scale-[0.97] transition-transform disabled:opacity-40 disabled:active:scale-100"
+          style={accent ? { backgroundColor: accent } : undefined}
+        >
+          {isLast ? "Show result" : "Next"}
+        </button>
+      )}
+
+      {error && (
+        <p className="mt-4 text-sm text-red-600" role="alert">
+          {error}
+        </p>
+      )}
+
+      <div aria-live="polite" className="sr-only">
+        {loading ? "Analyzing your answers..." : ""}
+      </div>
+
+      {step >= 1 && (
+        <ScoreBoard scores={liveScores} className="mt-10 pt-8 border-t border-border" />
+      )}
+    </div>
+  );
+}
+
+function ScoreBoard({
+  scores,
+  className = "",
+}: {
+  scores: ReturnType<typeof scoreAnswers>;
+  className?: string;
+}) {
+  const maxScore = Math.max(1, ...scores.map((s) => s.score));
+  return (
+    <div className={className}>
+      <p className="section-label text-muted mb-4">Live risk fit</p>
+      <div className="space-y-3">
+        {scores.map((s) => (
+          <div key={s.key} className="space-y-1">
+            <div className="flex items-center justify-between text-xs sm:text-sm">
+              <span className="font-medium">{s.name}</span>
+              <span className="font-mono text-muted">{s.percentage}%</span>
+            </div>
+            <div className="h-1.5 rounded-full bg-border overflow-hidden">
+              <div
+                className="h-full rounded-full transition-all duration-500"
+                style={{
+                  width: `${Math.max(2, (s.score / maxScore) * 100)}%`,
+                  backgroundColor: s.product.accent,
+                }}
+              />
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function ResultView({
+  result,
+  accent,
+  liveScores,
+  onRestart,
+}: {
+  result: DiagnosticResult;
+  accent?: string;
+  liveScores: ReturnType<typeof scoreAnswers>;
+  onRestart: () => void;
+}) {
+  const product = result.product;
+
+  const mailtoSubject = product
+    ? `Persidian demo — ${product.name}`
+    : "Persidian demo request";
+  const mailtoBody = product
+    ? `Hi Persidian team,\n\nThe Business X-ray pointed me toward ${product.name}. I'd like to book a demo.\n\nReasoning: ${result.reasoning}`
+    : "Hi Persidian team,\n\nI'd like to discuss which Persidian product fits my business.";
+  const mailtoUrl = `mailto:${EMAIL}?subject=${encodeURIComponent(
+    mailtoSubject
+  )}&body=${encodeURIComponent(mailtoBody)}`;
+
+  return (
+    <div
+      className="rounded-2xl border border-border bg-background p-6 sm:p-8"
+      data-enter
+    >
+      <p className="section-kicker text-muted mb-3">Recommendation</p>
+
+      {product ? (
+        <>
+          <h3 className="text-2xl sm:text-3xl font-semibold tracking-tight leading-tight">
+            {product.name} — {product.thesisLabel}
+          </h3>
+          <p className="mt-2 text-muted leading-relaxed">{product.tagline}</p>
+          <p className="mt-4 text-foreground font-medium leading-relaxed">
+            {result.reasoning}
+          </p>
+        </>
+      ) : (
+        <>
+          <h3 className="text-2xl sm:text-3xl font-semibold tracking-tight leading-tight">
+            No single product is a clear match yet.
+          </h3>
+          <p className="mt-2 text-muted leading-relaxed">{result.reasoning}</p>
+        </>
+      )}
+
+      <div className="mt-6 flex flex-wrap items-center gap-3">
+        <a
+          href={mailtoUrl}
+          className="inline-flex items-center gap-2 px-5 py-3 rounded-full bg-foreground text-background text-sm font-medium hover:opacity-90 active:scale-[0.97] transition-transform"
+          style={accent ? { backgroundColor: accent } : undefined}
+        >
+          Book a demo →
+        </a>
+        {product && (
+          <a
+            href={product.href}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-full border border-border text-sm font-medium hover:border-foreground/30 transition-colors"
+          >
+            Visit {product.name}
+          </a>
+        )}
+        <button
+          type="button"
+          onClick={onRestart}
+          className="text-sm font-medium text-muted hover:text-foreground transition-colors"
+        >
+          Start over
+        </button>
+      </div>
+
+      <ScoreBoard scores={liveScores} className="mt-10 pt-8 border-t border-border" />
+
+      <p className="mt-6 text-xs text-muted">
+        Or email directly at{" "}
+        <a href={`mailto:${EMAIL}`} className="underline underline-offset-4">
+          {EMAIL}
+        </a>
+      </p>
+    </div>
+  );
+}
