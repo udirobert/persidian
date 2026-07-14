@@ -1,4 +1,5 @@
 import { recommend, type DiagnosticAnswers } from "@/lib/diagnostic";
+import { generateReasoning } from "@/lib/llm";
 import { NextResponse } from "next/server";
 
 function isStringArray(value: unknown): value is string[] {
@@ -45,6 +46,18 @@ export async function POST(request: Request) {
   }
 
   const result = recommend(answers);
+
+  if (result.product) {
+    const llmReasoning = await generateReasoning(
+      answers,
+      result.product,
+      result.scores[0],
+      result.scores[1]
+    );
+    if (llmReasoning) {
+      result.reasoning = llmReasoning;
+    }
+  }
 
   return NextResponse.json({
     product: result.product,

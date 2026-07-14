@@ -199,11 +199,10 @@ function Hero() {
             </h1>
             <p className="mt-6 sm:mt-8 text-base sm:text-lg text-muted max-w-lg leading-relaxed">
               First, software recorded work. Then it automated tasks. Now it
-              observes, decides, and acts — continuously. Persidian builds
-              agents that watch the compounding risks inside a business:
-              cash, outreach, signals, data. A portfolio of live products,
-              one studio, one repeatable pattern for dependable autonomous
-              software.
+              observes, decides, and acts — continuously. Persidian diagnoses
+              which compounding risk is costing your business most, then
+              matches you to the agent built to stop it. A portfolio of live
+              products, one diagnostic concierge.
             </p>
             <div className="mt-8 flex flex-wrap items-center gap-4" data-enter style={{ "--enter-delay": "80ms" } as React.CSSProperties}>
               <a
@@ -311,7 +310,7 @@ function PortfolioIndex() {
       <div className="max-w-5xl mx-auto">
         <p className="section-kicker text-muted mb-5" data-enter>The portfolio</p>
         <h2 className="text-2xl sm:text-4xl font-semibold tracking-tight leading-tight mb-12" data-enter style={{ "--enter-delay": "40ms" } as React.CSSProperties}>
-          Live products. Distinct enterprise buyers.
+          Six agents. One diagnosis.
         </h2>
 
         <StaggeredGrid
@@ -988,11 +987,11 @@ function TheStudio() {
               Built to compound.
             </h2>
             <p className="mt-6 text-muted leading-relaxed">
-              A portfolio of live products, one studio capability. Each serves a
-              distinct enterprise buyer and ships with real integrations. The
-              compounding comes from running them together: every integration
-              hardens the next, and the studio gets faster at shipping agents
-              customers use every day.
+              Start with the Business X-ray to find the compounding risk costing
+              your business most. Then route to the Persidian agent built to stop
+              it. Each product serves a distinct enterprise buyer and ships with
+              real integrations — every integration hardens the next, and the
+              studio gets faster at deploying agents customers trust.
             </p>
             <div className="mt-8 flex flex-wrap items-center gap-4">
               <a

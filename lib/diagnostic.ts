@@ -88,10 +88,11 @@ export function scoreAnswers(answers: DiagnosticAnswers): ProductScore[] {
     tools.length * TOOL_WEIGHT;
 
   const scores = PRODUCTS.map((product) => {
-    const signals = SIGNALS[product.iconName];
+    const key = product.name.toLowerCase();
+    const signals = SIGNALS[key];
     if (!signals) {
       return {
-        key: product.iconName,
+        key,
         name: product.name,
         score: 0,
         maxPossible,
@@ -106,7 +107,7 @@ export function scoreAnswers(answers: DiagnosticAnswers): ProductScore[] {
       matches(signals.tools, tools) * TOOL_WEIGHT;
 
     return {
-      key: product.iconName,
+      key,
       name: product.name,
       score,
       maxPossible,
@@ -143,6 +144,38 @@ export function buildReasoning(
   }
 
   return `Because of ${reasonParts.join(", ")}, ${top.product.name} — ${top.product.thesisLabel.toLowerCase()} — is the best starting point.`;
+}
+
+export interface MatchedSignals {
+  role: string | null;
+  pains: string[];
+  tools: string[];
+}
+
+export function getMatchedSignals(
+  answers: DiagnosticAnswers,
+  productKey: string
+): MatchedSignals {
+  const signals = SIGNALS[productKey];
+  if (!signals) {
+    return { role: null, pains: [], tools: [] };
+  }
+
+  const role =
+    answers.role &&
+    signals.roles.some((s) => normalize(answers.role!).includes(normalize(s)))
+      ? answers.role
+      : null;
+
+  const pains = (answers.painPoints ?? []).filter((p) =>
+    signals.pains.some((s) => normalize(p).includes(normalize(s)))
+  );
+
+  const tools = (answers.tools ?? []).filter((t) =>
+    signals.tools.some((s) => normalize(t).includes(normalize(s)))
+  );
+
+  return { role, pains, tools };
 }
 
 export function recommend(

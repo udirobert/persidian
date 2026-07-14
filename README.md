@@ -20,17 +20,32 @@ You can start editing the page by modifying `app/page.tsx`. The page auto-update
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to load [Fraunces](https://fonts.google.com/specimen/Fraunces) for display and body text and [JetBrains Mono](https://fonts.google.com/specimen/JetBrains+Mono) for kickers and labels.
 
-## Contact form
+## Environment variables
+
+Copy `.env.example` to `.env.local` and fill in the values:
+
+```bash
+# Email delivery for the contact form
+RESEND_API_KEY=re_...
+CONTACT_TO_EMAIL="hello@persidian.com"
+CONTACT_FROM_EMAIL="Persidian <hello@persidian.com>"
+
+# LLM reasoning for the Business X-ray diagnostic
+OPENROUTER_API_KEY=sk-or-v1-...
+OPENROUTER_MODEL="tencent/hy3:free"
+OPENROUTER_SITE_URL="https://persidian.com"
+OPENROUTER_SITE_NAME="Persidian"
+```
+
+### Contact form
 
 The contact form posts to `app/api/contact/route.ts`, which validates the submission and either sends via Resend (if configured) or returns a composed `mailto` link plus the message body. The client then offers copy-to-clipboard and mailto fallbacks, so the form never silently fails when no mail client is installed.
 
-Copy `.env.example` to `.env.local` and fill in the values to enable server-side email delivery:
+### Business X-ray
 
-```bash
-RESEND_API_KEY=re_...
-CONTACT_TO_EMAIL=hello@persidian.com
-CONTACT_FROM_EMAIL="Persidian <hello@persidian.com>"
-```
+The diagnostic in `components/Diagnostic.tsx` posts to `app/api/diagnose/route.ts`. Product routing is deterministic, but if `OPENROUTER_API_KEY` is set, OpenRouter generates the final reasoning sentence. If the key is missing or the call fails, it falls back to deterministic reasoning.
+
+The default model is `tencent/hy3` (via OpenRouter). Note that the `tencent/hy3:free` slug currently returns reasoning tokens only and no final content, so the paid slug is used. Each call is cheap (~$0.00003 at the time of writing).
 
 ## Product vision
 
