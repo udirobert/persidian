@@ -221,7 +221,7 @@ function Hero() {
             data-enter
             style={{ "--enter-delay": "60ms" } as React.CSSProperties}
           >
-            <BraunClock />
+            <BraunClock className="w-full h-full braun-clock" />
           </div>
         </div>
       </div>

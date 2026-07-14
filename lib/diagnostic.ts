@@ -213,6 +213,70 @@ export function recommend(
   };
 }
 
+function pick<T>(arr: T[]): T {
+  return arr[Math.floor(Math.random() * arr.length)];
+}
+
+const timelineQuips: Record<string, string[]> = {
+  Now: [
+    "Clock starts now.",
+    "Resolved yesterday.",
+    "No more waiting.",
+    "This week, not next quarter.",
+    "Time to automate the wait away.",
+  ],
+  "This quarter": [
+    "Thirty-day pilot, then it runs itself.",
+    "This quarter belongs to the agents.",
+    "Small pilot, big unlock.",
+    "A quarter from now you'll wonder why it was manual.",
+  ],
+  "Later / exploring": [
+    "No rush — the clock will wait.",
+    "Bookmark this for your next planning cycle.",
+    "When you're ready, so is the agent.",
+    "File this under 'obvious in hindsight'.",
+  ],
+};
+
+const patternQuips = [
+  "That's the signal.",
+  "Perfect.",
+  "Makes sense.",
+  "Found it.",
+  "Exactly the pattern we watch.",
+];
+
+const ctaQuips = [
+  "Book a demo to see it in action.",
+  "Let's get it running.",
+  "A short demo is the fastest next step.",
+  "Ready when you are.",
+];
+
+export function generateTransitionQuip(timeline = "Later / exploring"): string {
+  return pick(timelineQuips[timeline] ?? timelineQuips["Later / exploring"]);
+}
+
+export function generateAgentSays(
+  answers: DiagnosticAnswers,
+  product: BaseProject,
+  confidence: "high" | "medium" | "low"
+): string {
+  const role = answers.role?.split("/")[0]?.trim().toLowerCase() ?? "your team";
+  const pain = answers.painPoints?.[0]?.toLowerCase() ?? "this pattern";
+  const timeline = answers.timeline ?? "Later / exploring";
+
+  const confidenceClause =
+    confidence === "high"
+      ? `This is a high-confidence match for ${role}.`
+      : `This is a ${confidence}-confidence match for ${role}.`;
+
+  return `${pick(patternQuips)} ${confidenceClause} ${pain} + ${product.name} = a clear next move. ${pick(
+    timelineQuips[timeline] ?? timelineQuips["Later / exploring"]
+  )} ${pick(ctaQuips)}`;
+}
+
 export const DIAGNOSTIC_QUESTIONS = [
   {
     id: "role",

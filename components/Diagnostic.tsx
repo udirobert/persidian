@@ -1,7 +1,12 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { DIAGNOSTIC_QUESTIONS, scoreAnswers, type DiagnosticAnswers } from "@/lib/diagnostic";
+import {
+  DIAGNOSTIC_QUESTIONS,
+  generateTransitionQuip,
+  scoreAnswers,
+  type DiagnosticAnswers,
+} from "@/lib/diagnostic";
 import type { BaseProject } from "@/lib/products";
 
 const EMAIL = "hello@persidian.com";
@@ -9,6 +14,7 @@ const EMAIL = "hello@persidian.com";
 interface DiagnosticResult {
   product: BaseProject | null;
   reasoning: string;
+  agentSays: string;
   confidence: "high" | "medium" | "low";
   scores: { key: string; name: string; percentage: number; score: number }[];
 }
@@ -24,17 +30,27 @@ export function Diagnostic({ accent }: DiagnosticProps) {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<DiagnosticResult | null>(null);
   const [error, setError] = useState("");
+  const [transition, setTransition] = useState<{ show: boolean; quip: string }>({
+    show: false,
+    quip: "",
+  });
   const cardRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (started && cardRef.current) {
+    return () => {
+      document.documentElement.classList.remove("time-payoff-active");
+    };
+  }, []);
+
+  useEffect(() => {
+    if ((started || transition.show) && cardRef.current) {
       cardRef.current.scrollIntoView({
         behavior: "smooth",
         block: "nearest",
         inline: "nearest",
       });
     }
-  }, [started, step, result]);
+  }, [started, step, result, transition.show]);
 
   const question = DIAGNOSTIC_QUESTIONS[step];
   const isLast = step === DIAGNOSTIC_QUESTIONS.length - 1;
@@ -52,7 +68,16 @@ export function Diagnostic({ accent }: DiagnosticProps) {
       const nextAnswers: DiagnosticAnswers = { ...answers, [question.id]: value };
       setAnswers(nextAnswers);
       if (isLast) {
-        submit(nextAnswers);
+        setTransition({
+          show: true,
+          quip: generateTransitionQuip(nextAnswers.timeline),
+        });
+        document.documentElement.classList.add("time-payoff-active");
+        setTimeout(() => {
+          submit(nextAnswers);
+          setTransition({ show: false, quip: "" });
+          document.documentElement.classList.remove("time-payoff-active");
+        }, 1400);
       } else {
         setStep((s) => s + 1);
       }
@@ -75,7 +100,16 @@ export function Diagnostic({ accent }: DiagnosticProps) {
   const handleNext = () => {
     if (!canAdvance) return;
     if (isLast) {
-      submit();
+      setTransition({
+        show: true,
+        quip: generateTransitionQuip(answers.timeline),
+      });
+      document.documentElement.classList.add("time-payoff-active");
+      setTimeout(() => {
+        submit();
+        setTransition({ show: false, quip: "" });
+        document.documentElement.classList.remove("time-payoff-active");
+      }, 1400);
     } else {
       setStep((s) => s + 1);
     }
@@ -130,6 +164,10 @@ export function Diagnostic({ accent }: DiagnosticProps) {
         cardRef={cardRef}
       />
     );
+  }
+
+  if (transition.show) {
+    return <TransitionCard cardRef={cardRef} quip={transition.quip} />;
   }
 
   if (!started) {
@@ -293,29 +331,6 @@ function ScoreBoard({
   );
 }
 
-function getNudge(
-  product: BaseProject,
-  answers: DiagnosticAnswers,
-  confidence: "high" | "medium" | "low"
-): string {
-  const role = answers.role?.split("/")[0]?.trim().toLowerCase() ?? "your";
-  const confidenceClause =
-    confidence === "high"
-      ? `This is a high-confidence match for ${role} teams.`
-      : `This is a ${confidence}-confidence match for ${role} teams.`;
-
-  switch (answers.timeline) {
-    case "Now":
-      return `${confidenceClause} Because you want to act now, a 15-minute ${product.name} demo this week is the fastest way to stop ${product.thesisLabel.toLowerCase()} from compounding.`;
-    case "This quarter":
-      return `${confidenceClause} Teams with this profile usually pilot ${product.name} within 30 days.`;
-    case "Later / exploring":
-      return `${confidenceClause} No rush — the ${product.name} case below is the best next step, and you can book a demo when you are ready.`;
-    default:
-      return `${confidenceClause} A short demo is the best way to see if ${product.name} fits your workflow.`;
-  }
-}
-
 function ResultView({
   result,
   answers,
@@ -332,7 +347,6 @@ function ResultView({
   cardRef: React.RefObject<HTMLDivElement | null>;
 }) {
   const product = result.product;
-  const nudge = product ? getNudge(product, answers, result.confidence) : null;
 
   const confidenceLabel: Record<string, string> = {
     high: "High-confidence match",
@@ -374,8 +388,15 @@ function ResultView({
           <p className="mt-4 text-foreground font-medium leading-relaxed">
             {result.reasoning}
           </p>
-          {nudge && (
-            <p className="mt-3 text-sm text-muted leading-relaxed">{nudge}</p>
+          {result.agentSays && (
+            <div className="mt-6 rounded-2xl border border-border bg-muted/30 p-4 sm:p-5">
+              <p className="text-[10px] sm:text-xs font-mono uppercase tracking-wider text-muted mb-1">
+                Agent says
+              </p>
+              <p className="text-foreground font-medium leading-relaxed">
+                {result.agentSays}
+              </p>
+            </div>
           )}
         </>
       ) : (
@@ -527,6 +548,32 @@ function ChatPanel({
           Ask →
         </button>
       </form>
+    </div>
+  );
+}
+
+function TransitionCard({
+  cardRef,
+  quip,
+}: {
+  cardRef: React.RefObject<HTMLDivElement | null>;
+  quip: string;
+}) {
+  return (
+    <div
+      ref={cardRef}
+      className="rounded-2xl border border-border bg-background p-6 sm:p-8"
+      data-enter
+    >
+      <div className="flex flex-col items-center justify-center py-10 sm:py-14 text-center">
+        <p className="text-2xl sm:text-3xl font-semibold tracking-tight leading-tight max-w-md">
+          {quip}
+        </p>
+        <p className="mt-4 text-sm text-muted">Asking the concierge...</p>
+        <div className="mt-6 h-1 w-24 rounded-full bg-border overflow-hidden">
+          <div className="h-full w-1/3 rounded-full bg-accent animate-pulse" />
+        </div>
+      </div>
     </div>
   );
 }

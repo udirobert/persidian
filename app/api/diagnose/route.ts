@@ -1,4 +1,8 @@
-import { recommend, type DiagnosticAnswers } from "@/lib/diagnostic";
+import {
+  recommend,
+  generateAgentSays,
+  type DiagnosticAnswers,
+} from "@/lib/diagnostic";
 import { generateReasoning } from "@/lib/llm";
 import { NextResponse } from "next/server";
 
@@ -47,6 +51,7 @@ export async function POST(request: Request) {
 
   const result = recommend(answers);
 
+  let agentSays = "";
   if (result.product) {
     const llmReasoning = await generateReasoning(
       answers,
@@ -57,11 +62,13 @@ export async function POST(request: Request) {
     if (llmReasoning) {
       result.reasoning = llmReasoning;
     }
+    agentSays = generateAgentSays(answers, result.product, result.confidence);
   }
 
   return NextResponse.json({
     product: result.product,
     reasoning: result.reasoning,
+    agentSays,
     confidence: result.confidence,
     scores: result.scores.map((s) => ({
       key: s.key,

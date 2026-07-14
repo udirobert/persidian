@@ -253,3 +253,37 @@ body {
   }
 }
 
+/* ---- Business X-ray time-payoff transition ---- */
+.time-payoff-active .braun-clock {
+  animation: time-payoff 1.4s ease-in-out;
+}
+
+@keyframes time-payoff {
+  0% {
+    transform: scale(1) rotate(0deg);
+    filter: brightness(1);
+  }
+  25% {
+    transform: scale(1.08) rotate(-8deg);
+    filter: brightness(1.15);
+  }
+  50% {
+    transform: scale(1.05) rotate(6deg);
+    filter: brightness(1.1);
+  }
+  75% {
+    transform: scale(1.02) rotate(-3deg);
+    filter: brightness(1.05);
+  }
+  100% {
+    transform: scale(1) rotate(0deg);
+    filter: brightness(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .time-payoff-active .braun-clock {
+    animation: none;
+  }
+}
+
