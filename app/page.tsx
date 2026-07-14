@@ -217,7 +217,7 @@ function Hero() {
           </div>
 
           <div
-            className="w-44 h-44 sm:w-60 sm:h-60 lg:w-72 lg:h-72 shrink-0"
+            className="w-44 h-44 sm:w-60 sm:h-60 lg:w-72 lg:h-72 shrink-0 lg:sticky lg:top-32"
             data-enter
             style={{ "--enter-delay": "60ms" } as React.CSSProperties}
           >

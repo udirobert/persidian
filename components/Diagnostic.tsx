@@ -240,7 +240,11 @@ export function Diagnostic({ accent }: DiagnosticProps) {
       </div>
 
       {step >= 1 && (
-        <ScoreBoard scores={liveScores} className="mt-10 pt-8 border-t border-border" />
+        <ScoreBoard
+          scores={liveScores}
+          className="mt-10 pt-8 border-t border-border"
+          showTooltips
+        />
       )}
     </div>
   );
@@ -249,17 +253,26 @@ export function Diagnostic({ accent }: DiagnosticProps) {
 function ScoreBoard({
   scores,
   className = "",
+  limit,
+  showTooltips = false,
 }: {
   scores: ReturnType<typeof scoreAnswers>;
   className?: string;
+  limit?: number;
+  showTooltips?: boolean;
 }) {
-  const maxScore = Math.max(1, ...scores.map((s) => s.score));
+  const displayScores = limit ? scores.slice(0, limit).filter((s) => s.score > 0) : scores;
+  const maxScore = Math.max(1, ...displayScores.map((s) => s.score));
   return (
     <div className={className}>
       <p className="section-label text-muted mb-4">Live risk fit</p>
       <div className="space-y-3">
-        {scores.map((s) => (
-          <div key={s.key} className="space-y-1">
+        {displayScores.map((s) => (
+          <div
+            key={s.key}
+            className="space-y-1"
+            title={showTooltips ? s.product.tagline : undefined}
+          >
             <div className="flex items-center justify-between text-xs sm:text-sm">
               <span className="font-medium">{s.name}</span>
               <span className="font-mono text-muted">{s.percentage}%</span>
@@ -280,6 +293,29 @@ function ScoreBoard({
   );
 }
 
+function getNudge(
+  product: BaseProject,
+  answers: DiagnosticAnswers,
+  confidence: "high" | "medium" | "low"
+): string {
+  const role = answers.role?.split("/")[0]?.trim().toLowerCase() ?? "your";
+  const confidenceClause =
+    confidence === "high"
+      ? `This is a high-confidence match for ${role} teams.`
+      : `This is a ${confidence}-confidence match for ${role} teams.`;
+
+  switch (answers.timeline) {
+    case "Now":
+      return `${confidenceClause} Because you want to act now, a 15-minute ${product.name} demo this week is the fastest way to stop ${product.thesisLabel.toLowerCase()} from compounding.`;
+    case "This quarter":
+      return `${confidenceClause} Teams with this profile usually pilot ${product.name} within 30 days.`;
+    case "Later / exploring":
+      return `${confidenceClause} No rush — the ${product.name} case below is the best next step, and you can book a demo when you are ready.`;
+    default:
+      return `${confidenceClause} A short demo is the best way to see if ${product.name} fits your workflow.`;
+  }
+}
+
 function ResultView({
   result,
   answers,
@@ -296,6 +332,13 @@ function ResultView({
   cardRef: React.RefObject<HTMLDivElement | null>;
 }) {
   const product = result.product;
+  const nudge = product ? getNudge(product, answers, result.confidence) : null;
+
+  const confidenceLabel: Record<string, string> = {
+    high: "High-confidence match",
+    medium: "Solid match",
+    low: "Possible match",
+  };
 
   const mailtoSubject = product
     ? `Persidian demo — ${product.name}`
@@ -313,7 +356,14 @@ function ResultView({
       className="rounded-2xl border border-border bg-background p-6 sm:p-8"
       data-enter
     >
-      <p className="section-kicker text-muted mb-3">Recommendation</p>
+      <p className="section-kicker text-muted mb-3">
+        Recommendation
+        {product && (
+          <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded-full bg-border text-[10px] sm:text-xs font-medium uppercase tracking-wider">
+            {confidenceLabel[result.confidence] ?? "Match"}
+          </span>
+        )}
+      </p>
 
       {product ? (
         <>
@@ -324,6 +374,9 @@ function ResultView({
           <p className="mt-4 text-foreground font-medium leading-relaxed">
             {result.reasoning}
           </p>
+          {nudge && (
+            <p className="mt-3 text-sm text-muted leading-relaxed">{nudge}</p>
+          )}
         </>
       ) : (
         <>
@@ -359,7 +412,12 @@ function ResultView({
         </button>
       </div>
 
-      <ScoreBoard scores={liveScores} className="mt-10 pt-8 border-t border-border" />
+      <ScoreBoard
+        scores={liveScores}
+        className="mt-10 pt-8 border-t border-border"
+        limit={3}
+        showTooltips
+      />
 
       {product && <ChatPanel product={product} answers={answers} accent={accent} />}
 
