@@ -133,6 +133,14 @@ body {
   }
 }
 
+/* Touch devices never hover, so the "Visit →" affordance would stay
+   invisible; show it at rest instead. */
+@media (hover: none) {
+  .project-card .card-visit {
+    opacity: 0.9;
+  }
+}
+
 /* Keyboard focus reveals the preview too — same motion, no hover
    capability required. Tab users get the same peek as mouse users. */
 .project-card:focus-visible .card-preview {

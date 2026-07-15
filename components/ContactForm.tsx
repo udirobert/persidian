@@ -6,6 +6,11 @@ const EMAIL = "hello@persidian.com";
 
 interface ContactFormProps {
   accent?: string;
+  /** Label for the submit button. */
+  submitLabel?: string;
+  /** What the sender is asking for — drives the email subject line. */
+  intent?: "demo" | "deck";
+  messagePlaceholder?: string;
 }
 
 interface ContactResult {
@@ -15,7 +20,12 @@ interface ContactResult {
   to: string;
 }
 
-export function ContactForm({ accent }: ContactFormProps) {
+export function ContactForm({
+  accent,
+  submitLabel = "Send →",
+  intent = "demo",
+  messagePlaceholder = "What would you like to know?",
+}: ContactFormProps) {
   const [name, setName] = useState("");
   const [org, setOrg] = useState("");
   const [message, setMessage] = useState("");
@@ -34,7 +44,7 @@ export function ContactForm({ accent }: ContactFormProps) {
       const response = await fetch("/api/contact", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, org, message }),
+        body: JSON.stringify({ name, org, message, intent }),
       });
 
       const data = (await response.json()) as {
@@ -124,7 +134,7 @@ export function ContactForm({ accent }: ContactFormProps) {
           onChange={(e) => setMessage(e.target.value)}
           rows={4}
           required
-          placeholder="What would you like to know?"
+          placeholder={messagePlaceholder}
           className="w-full rounded-xl border border-border bg-background px-4 py-3 text-sm text-foreground placeholder:text-muted/60 focus:outline-none focus:ring-2 focus:ring-foreground/10 focus:border-foreground/30 transition-colors resize-none"
         />
       </div>
@@ -141,7 +151,7 @@ export function ContactForm({ accent }: ContactFormProps) {
         className="inline-flex items-center gap-2 px-5 py-3 rounded-full bg-foreground text-background text-sm font-medium hover:opacity-90 active:scale-[0.97] transition-transform disabled:opacity-50 disabled:active:scale-100"
         style={accent ? { backgroundColor: accent } : undefined}
       >
-        {status === "submitting" ? "Sending..." : "Request the deck →"}
+        {status === "submitting" ? "Sending..." : submitLabel}
       </button>
       <p className="text-xs text-muted">
         Or email directly at{" "}

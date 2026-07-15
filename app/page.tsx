@@ -1,9 +1,12 @@
-import { ScrollProgressMark } from "@/components/ScrollProgressMark";
+import Link from "next/link";
+import Image from "next/image";
 import { BraunClock } from "@/components/BraunClock";
-import { PinnedSection } from "@/components/PinnedSection";
 import { StaggeredGrid } from "@/components/StaggeredGrid";
 import { BatonRule } from "@/components/BatonRule";
 import { Diagnostic } from "@/components/Diagnostic";
+import { ContactForm } from "@/components/ContactForm";
+import { MobileXrayCta } from "@/components/MobileXrayCta";
+import { Header, Footer, CONNECT_URL, EMAIL } from "@/components/SiteChrome";
 import {
   ReceiptIcon,
   PaperPlaneIcon,
@@ -13,7 +16,6 @@ import {
   DiversifiIcon,
 } from "@/components/ProductIcon";
 import { PRODUCTS as BASE_PRODUCTS, type BaseProject } from "@/lib/products";
-import Image from "next/image";
 
 interface Project extends BaseProject {
   icon: () => React.ReactElement;
@@ -36,9 +38,69 @@ const PROJECTS: Project[] = BASE_PRODUCTS.map((p) => {
   return { ...p, icon: Icon };
 });
 
+/* Buyer-facing case for each agent: what it does, in the buyer's language,
+   with the single strongest proof point. The investor material — vision,
+   moat, full proof lists — lives on /studio. */
+interface ProductCase {
+  title: string;
+  body: string[];
+  proof: string;
+}
 
-const CONNECT_URL = "https://x.com/udirobert";
-const EMAIL = "hello@persidian.com";
+const CASES: Record<string, ProductCase> = {
+  Sikizana: {
+    title: "An AI credit controller and bookkeeper for Xero.",
+    body: [
+      "Sikizana connects to Xero and runs a proactive audit before you type a word. It ages receivables into 30/60/90-day buckets, benchmarks payment behaviour against your sector, scores customers RED/AMBER/GREEN, and drafts escalating chase emails with statutory interest and late-payment compensation already calculated.",
+      "It also explains your P&L in plain English, estimates UK Corporation Tax with HMRC citations, and matches receipts from a photo. Nothing writes back to Xero without your approval.",
+    ],
+    proof:
+      "Live in production on Xero — 19 permissioned Xero actions, every write-back gated by human approval.",
+  },
+  Nuncio: {
+    title: "Personalized video outreach, produced by agents.",
+    body: [
+      "Give Nuncio a prospect's URL and a brief. A researcher enriches the profile, a copywriter drafts the angle and script, a QA agent checks length and brand safety, and a producer renders the finished video — with your sign-off before anything renders.",
+      "The result lands on a branded page with captions, sharing, and translation into eight languages. It sounds like you wrote it for them, because the agent did.",
+    ],
+    proof: "About five minutes from URL to finished video, at the cost of API calls.",
+  },
+  Lenitnes: {
+    title: "Signal intelligence for consensus-critical code.",
+    body: [
+      "Lenitnes watches public commits to consensus-critical repositories — Bitcoin, Ethereum, Zcash, Solana and more — and infers directional theses before the market prices them in. Every call is timestamped, scored against a versioned rubric, and tracked on a public scorecard that cannot misremember its own record.",
+    ],
+    proof:
+      "Replayed against public commits, it would have flagged a high-conviction ZEC short two to three days before the disclosure that cut the price in half.",
+  },
+  DataBard: {
+    title: "An AI analyst that makes your data estate audible.",
+    body: [
+      "DataBard connects to your catalog and warehouse, computes health scores, critical-table rankings, coverage gaps, and PII flags — then delivers the findings in formats people actually consume: two-host podcasts, dashboards, reports, and alerts.",
+      "Click any podcast segment to drill into the exact columns, tests, and lineage behind the insight. The catalog stops being a graveyard and becomes a conversation.",
+    ],
+    proof:
+      "Adapters for OpenMetadata, dbt, The Graph, and Dune today — plus a SQL escape hatch for 50+ sources.",
+  },
+  Weft: {
+    title: "Post-award verification that writes back to your grant system of record.",
+    body: [
+      "For program officers and grants managers already on Fluxx, Foundant, AmpliFund, Submittable, or Salesforce Nonprofit: when a grantee marks a milestone complete, Weft runs a fixed checklist against the evidence and returns a verification receipt to write onto the grant record — so the tranche isn't stuck in a review queue.",
+      "Private settlement on Canton is optional pilot infrastructure for teams that want to move capital the same way verification moves. It is not the sales lead, and no mainnet capital movement is claimed.",
+    ],
+    proof:
+      "Live production ops surface + GMS ingest/receipt API. Settlement labeled Canton Devnet pilot — not mainnet capital movement.",
+  },
+  Diversifi: {
+    title: "Autonomous protection from currency drag.",
+    body: [
+      "Diversifi quantifies what earning in one currency and buying in another costs your working capital — as real for a US importer paying suppliers in China as for a European exporter or a Nairobi trading house. Its Guardian agent routes capital to flatten that risk automatically, every decision recorded on an auditable public ledger.",
+      "The same engine powers a savings product for individuals: optimize yield, protect purchasing power, and keep your capital parked in vehicles aligned with your values.",
+    ],
+    proof:
+      "Live on three mainnets with verified, publicly auditable decision ledgers.",
+  },
+};
 
 export default function Home() {
   return (
@@ -48,132 +110,22 @@ export default function Home() {
       <main>
         <Hero />
         <BatonRule />
-        <StudioThesis />
+        <TheProblem />
         <BatonRule />
         <PortfolioIndex />
         <BatonRule />
 
-        <section aria-label="Sikizana">
-          <PinnedSection
-            id="sikizana"
-            style={{
-              background: PROJECTS[0].bg,
-              color: PROJECTS[0].fg,
-            }}
-          >
-            {[
-              <SikizanaWhat key="s-what" />,
-              <SikizanaVision key="s-vision" />,
-              <SikizanaProof key="s-proof" />,
-            ]}
-          </PinnedSection>
-        </section>
-
-        <section aria-label="Nuncio">
-          <PinnedSection
-            id="nuncio"
-            style={{
-              background: PROJECTS[1].bg,
-              color: PROJECTS[1].fg,
-            }}
-          >
-            {[
-              <NuncioWhat key="n-what" />,
-              <NuncioVision key="n-vision" />,
-              <NuncioProof key="n-proof" />,
-            ]}
-          </PinnedSection>
-        </section>
-
-        <section aria-label="Lenitnes">
-          <PinnedSection
-            id="lenitnes"
-            style={{
-              background: PROJECTS[2].bg,
-              color: PROJECTS[2].fg,
-            }}
-          >
-            {[
-              <LenitnesWhat key="l-what" />,
-              <LenitnesVision key="l-vision" />,
-              <LenitnesProof key="l-proof" />,
-            ]}
-          </PinnedSection>
-        </section>
-
-        <section aria-label="DataBard">
-          <PinnedSection
-            id="databard"
-            style={{
-              background: PROJECTS[3].bg,
-              color: PROJECTS[3].fg,
-            }}
-          >
-            {[
-              <DataBardWhat key="d-what" />,
-              <DataBardVision key="d-vision" />,
-              <DataBardProof key="d-proof" />,
-            ]}
-          </PinnedSection>
-        </section>
-
-        <section aria-label="Weft">
-          <PinnedSection
-            id="weft"
-            style={{
-              background: PROJECTS[4].bg,
-              color: PROJECTS[4].fg,
-            }}
-          >
-            {[
-              <WeftWhat key="w-what" />,
-              <WeftVision key="w-vision" />,
-              <WeftProof key="w-proof" />,
-            ]}
-          </PinnedSection>
-        </section>
-
-        <section aria-label="Diversifi">
-          <PinnedSection
-            id="diversifi"
-            style={{
-              background: PROJECTS[5].bg,
-              color: PROJECTS[5].fg,
-            }}
-          >
-            {[
-              <DiversifiWhat key="x-what" />,
-              <DiversifiVision key="x-vision" />,
-              <DiversifiProof key="x-proof" />,
-            ]}
-          </PinnedSection>
-        </section>
+        {PROJECTS.map((p) => (
+          <ProductSection key={p.name} project={p} productCase={CASES[p.name]} />
+        ))}
 
         <BatonRule />
         <TheStudio />
       </main>
 
+      <MobileXrayCta />
       <Footer />
     </div>
-  );
-}
-
-function Header() {
-  return (
-    <header className="fixed top-0 inset-x-0 z-50 px-5 sm:px-10 py-5 sm:py-6 flex items-center justify-between mix-blend-difference text-background">
-      <a href="#" className="flex items-center gap-2.5 sm:gap-3">
-        <ScrollProgressMark />
-        <span className="text-sm font-semibold tracking-tight">
-          PERSIDIAN
-        </span>
-      </a>
-      <a
-        href={CONNECT_URL}
-        className="text-xs font-medium opacity-70 hover:opacity-100 transition-opacity"
-      >
-        Connect
-      </a>
-    </header>
   );
 }
 
@@ -198,8 +150,8 @@ function Hero() {
               ignoring.
             </h1>
             <p className="mt-6 sm:mt-8 text-base sm:text-lg text-muted max-w-lg leading-relaxed">
-              Four questions. No chatbot. We match your costliest hidden risk
-              to the Persidian agent built to stop it.
+              Four questions. No sales call. We match your costliest hidden
+              risk to the Persidian agent built to stop it.
             </p>
 
             <div id="diagnostic" className="mt-8 w-full">
@@ -217,7 +169,7 @@ function Hero() {
           </div>
 
           <div
-            className="w-44 h-44 sm:w-60 sm:h-60 lg:w-72 lg:h-72 shrink-0 lg:sticky lg:top-32"
+            className="hidden lg:block w-72 h-72 shrink-0 lg:sticky lg:top-32"
             data-enter
             style={{ "--enter-delay": "60ms" } as React.CSSProperties}
           >
@@ -233,21 +185,11 @@ function Hero() {
   );
 }
 
-function StudioThesis() {
+function TheProblem() {
   return (
     <section id="thesis" className="py-24 sm:py-32 px-5 sm:px-10 bg-background text-foreground border-t border-border">
       <div className="max-w-5xl mx-auto">
-        <p className="section-kicker text-muted mb-5" data-enter>The thesis</p>
-        <blockquote
-          className="mb-12 max-w-3xl text-2xl sm:text-3xl font-medium italic leading-snug text-foreground"
-          data-enter
-          style={{ "--enter-delay": "20ms" } as React.CSSProperties}
-        >
-          &ldquo;The future is already here — it&rsquo;s just not evenly distributed.&rdquo;
-          <cite className="mt-3 block text-xs not-italic font-mono uppercase tracking-[0.15em] text-muted">
-            William Gibson
-          </cite>
-        </blockquote>
+        <p className="section-kicker text-muted mb-5" data-enter>The problem</p>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-20">
           <div data-enter style={{ "--enter-delay": "40ms" } as React.CSSProperties}>
             <h2 className="text-2xl sm:text-4xl font-semibold tracking-tight leading-tight">
@@ -262,39 +204,41 @@ function StudioThesis() {
               anyone reads them.
             </p>
             <p>
-              Persidian builds agents that live inside those rhythms and act
-              while the cost is still small. Every product runs one pattern: find
-              a risk that repeats and costs real money, plug into the system
-              where it lives, let an agent do the work, keep a human at the
-              approval gate.
+              Every Persidian agent runs one pattern: find a risk that repeats
+              and costs real money, plug into the system where it lives, let the
+              agent do the work — and keep you at the approval gate.
             </p>
-            <p className="text-foreground">
-              Run as a studio, the five products compound on each other — each
-              serves a different enterprise buyer, and every integration hardens
-              the next. The aim is an operating layer businesses trust to act on
-              their behalf.
+            <p>
+              <Link
+                href="/studio"
+                className="text-sm font-medium text-foreground underline underline-offset-4 decoration-border hover:decoration-foreground transition-colors"
+              >
+                Read the studio thesis →
+              </Link>
             </p>
           </div>
         </div>
 
         <div
-          className="mt-16 grid gap-px bg-border border border-border rounded-2xl overflow-hidden"
+          className="mt-16 grid grid-cols-2 lg:grid-cols-3 gap-px bg-border border border-border rounded-2xl overflow-hidden"
           data-enter
-          style={{
-            gridTemplateColumns: `repeat(${PROJECTS.length}, minmax(0, 1fr))`,
-            "--enter-delay": "120ms",
-          } as React.CSSProperties}
+          style={{ "--enter-delay": "120ms" } as React.CSSProperties}
         >
           {PROJECTS.map((p) => (
-            <div
-              key={p.name}
-              className="bg-background p-5 sm:p-6 text-center sm:text-left"
-            >
-              <p className="section-label text-muted mb-1">{p.thesisLabel}</p>
-              <p className="text-sm sm:text-base font-semibold">{p.name}</p>
+            <div key={p.name} className="bg-background p-4 sm:p-6">
+              <p className="section-label text-muted mb-3">
+                {p.thesisLabel} · {p.name}
+              </p>
+              <p className="text-2xl sm:text-4xl font-semibold tracking-tight" style={{ color: p.accent }}>
+                {p.problemStat}
+              </p>
+              <p className="mt-2 text-xs sm:text-sm text-muted leading-relaxed">{p.problemLabel}</p>
             </div>
           ))}
         </div>
+        <p className="mt-4 text-xs text-muted" data-enter style={{ "--enter-delay": "160ms" } as React.CSSProperties}>
+          Drawn from public industry research and market data.
+        </p>
       </div>
     </section>
   );
@@ -389,586 +333,71 @@ function PortfolioIndex() {
   );
 }
 
-function BeatLayout({
-  kicker,
-  label,
-  title,
-  children,
-  accent,
-  muted,
-  href,
-  repo,
-  name,
+function ProductSection({
+  project: p,
+  productCase,
 }: {
-  kicker: string;
-  label: string;
-  title: string;
-  children: React.ReactNode;
-  accent: string;
-  muted: string;
-  href: string;
-  repo: string;
-  name: string;
+  project: Project;
+  productCase: ProductCase;
 }) {
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-start">
-      <div className="lg:col-span-4">
-        <p className="section-kicker mb-2" style={{ color: muted }}>{kicker}</p>
-        <p className="section-label" style={{ color: accent }}>{label}</p>
-        <h2 className="mt-4 text-2xl sm:text-4xl lg:text-5xl font-semibold tracking-tight leading-[1.1]">
-          {title}
-        </h2>
-        <div className="mt-6 flex flex-wrap items-center gap-3">
-          <a
-            href={href}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs font-medium hover:opacity-80 transition-opacity"
-            style={{ borderColor: accent, color: accent }}
-          >
-            Visit {name} →
-          </a>
-          <a
-            href={repo}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs font-medium hover:opacity-80 transition-opacity"
-            style={{ borderColor: "color-mix(in srgb, currentColor 20%, transparent)", color: muted }}
-          >
-            Source
-          </a>
+    <section
+      aria-label={p.name}
+      id={p.name.toLowerCase()}
+      className="lg:min-h-screen flex items-center px-5 sm:px-10 py-20 sm:py-24"
+      style={{ background: p.bg, color: p.fg }}
+    >
+      <div className="w-full max-w-5xl mx-auto">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-start">
+          <div className="lg:col-span-4">
+            <p className="section-kicker mb-2" style={{ color: p.muted }}>
+              {p.number} / {p.name}
+            </p>
+            <p className="section-label" style={{ color: p.accent }}>
+              {p.thesisLabel}
+            </p>
+            <h2 className="mt-4 text-2xl sm:text-4xl lg:text-5xl font-semibold tracking-tight leading-[1.1]">
+              {productCase.title}
+            </h2>
+            <div className="mt-6 flex flex-wrap items-center gap-3">
+              <a
+                href={p.href}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs font-medium hover:opacity-80 transition-opacity"
+                style={{ borderColor: p.accent, color: p.accent }}
+              >
+                Visit {p.name} →
+              </a>
+              <a
+                href={p.repo}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs font-medium hover:opacity-80 transition-opacity"
+                style={{
+                  borderColor: "color-mix(in srgb, currentColor 20%, transparent)",
+                  color: p.muted,
+                }}
+              >
+                Source
+              </a>
+            </div>
+          </div>
+          <div className="lg:col-span-8 text-base sm:text-lg leading-relaxed space-y-5" style={{ color: p.muted }}>
+            {productCase.body.map((paragraph, i) => (
+              <p key={i}>{paragraph}</p>
+            ))}
+            <div
+              className="pt-5 pl-4 border-l-2"
+              style={{ borderColor: p.accent }}
+            >
+              <p className="section-label mb-2" style={{ color: p.accent }}>
+                The proof
+              </p>
+              <p className="font-medium" style={{ color: p.fg }}>
+                {productCase.proof}
+              </p>
+            </div>
+          </div>
         </div>
       </div>
-      <div className="lg:col-span-8 text-base sm:text-lg leading-relaxed space-y-5" style={{ color: muted }}>
-        {children}
-      </div>
-    </div>
-  );
-}
-
-/* ---- Sikizana ---- */
-function SikizanaWhat() {
-  const p = PROJECTS[0];
-  return (
-    <BeatLayout
-      kicker="01 / Sikizana"
-      label="What it does"
-      title="An AI credit controller and bookkeeper for Xero."
-      accent={p.accent}
-      muted={p.muted}
-      href={p.href}
-      repo={p.repo}
-      name={p.name}
-    >
-      <p>
-        Sikizana connects to Xero and runs a proactive audit before the user
-        types a word. It ages receivables into 30/60/90 day buckets, compares
-        payment behavior against typical UK sector ranges, scores customers with
-        RED/AMBER/GREEN reliability, and drafts escalating chase emails with
-        statutory interest and £40/£70/£100 fixed-sum compensation already
-        calculated.
-      </p>
-      <p>
-        On the bookkeeping side it explains P&L in plain English, estimates UK
-        Corporation Tax with HMRC citations, proposes journal entries, and
-        matches receipts via Gemini Vision — all with human-in-the-loop
-        approval before anything writes back to Xero.
-      </p>
-    </BeatLayout>
-  );
-}
-
-function SikizanaVision() {
-  const p = PROJECTS[0];
-  return (
-    <BeatLayout
-      kicker="01 / Sikizana"
-      label="The vision"
-      title="Every small business gets a finance team in a browser."
-      accent={p.accent}
-      muted={p.muted}
-      href={p.href}
-      repo={p.repo}
-      name={p.name}
-    >
-      <p>
-        4.4 million small businesses use Xero. Most do not have an accountant
-        — or a credit controller. The wedge is cash recovery: money already
-        earned but slipping away because nobody chases it. The expansion is full
-        AI bookkeeping: a conversational agent that audits, explains, and fixes
-        the books as a subscription service.
-      </p>
-      <p>
-        The moat is the integration depth. Sikizana writes back to Xero through
-        a real, permissioned tool layer — not prompt engineering — and every
-        figure is traceable to an HMRC citation, a sector benchmark, or an
-        explicit human approval.
-      </p>
-    </BeatLayout>
-  );
-}
-
-function SikizanaProof() {
-  const p = PROJECTS[0];
-  return (
-    <BeatLayout
-      kicker="01 / Sikizana"
-      label="The proof"
-      title="Live in production on Xero."
-      accent={p.accent}
-      muted={p.muted}
-      href={p.href}
-      repo={p.repo}
-      name={p.name}
-    >
-      <ul className="space-y-3 list-disc pl-5 marker:text-accent">
-        <li>19 Xero tools in the agent loop, plus tax RAG and receipt vision.</li>
-        <li>77 tests covering report parsing, OAuth, webhooks, chase scheduling, and data erasure.</li>
-        <li>Real write-back path gated at the tool layer, not just the prompt layer.</li>
-        <li>Live deployments: landing page, books chat, impact dashboard, security page, activity audit.</li>
-      </ul>
-    </BeatLayout>
-  );
-}
-
-/* ---- Nuncio ---- */
-function NuncioWhat() {
-  const p = PROJECTS[1];
-  return (
-    <BeatLayout
-      kicker="02 / Nuncio"
-      label="What it does"
-      title="A multi-agent studio for personalized video outreach."
-      accent={p.accent}
-      muted={p.muted}
-      href={p.href}
-      repo={p.repo}
-      name={p.name}
-    >
-      <p>
-        Nuncio turns a prospect URL and a brief into a bespoke video in about
-        five minutes. Four specialized agents coordinate in a Band room: a
-        researcher enriches the profile via TinyFish, a copywriter generates
-        personalization angles and scripts, a QA agent validates word count and
-        brand safety, and a producer renders audio with ElevenLabs and video
-        with HeyGen.
-      </p>
-      <p>
-        Human approval is required before rendering. The finished video is
-        served on a branded landing page with captions, sharing, and optional
-        translation into eight languages.
-      </p>
-    </BeatLayout>
-  );
-}
-
-function NuncioVision() {
-  const p = PROJECTS[1];
-  return (
-    <BeatLayout
-      kicker="02 / Nuncio"
-      label="The vision"
-      title="The end of cold outreach."
-      accent={p.accent}
-      muted={p.muted}
-      href={p.href}
-      repo={p.repo}
-      name={p.name}
-    >
-      <p>
-        No templates. No mail merge. A video that sounds like the sender wrote
-        it for the recipient, because the agent did. The use cases are
-        horizontal but high-value: sales prospecting, investor pitches,
-        recruiting outreach, freelancer pitches, and conference follow-up.
-      </p>
-      <p>
-        The strategic value is a reusable personalization engine. Point the same
-        agent room at LinkedIn, GitHub, Twitter/X, or any public profile, choose
-        an intent chip, and produce a 1-to-1 asset at the cost of API calls.
-      </p>
-    </BeatLayout>
-  );
-}
-
-function NuncioProof() {
-  const p = PROJECTS[1];
-  return (
-    <BeatLayout
-      kicker="02 / Nuncio"
-      label="The proof"
-      title="Live pipeline, demo mode, and a branded share surface."
-      accent={p.accent}
-      muted={p.muted}
-      href={p.href}
-      repo={p.repo}
-      name={p.name}
-    >
-      <ul className="space-y-3 list-disc pl-5 marker:text-accent">
-        <li>Full pipeline UI with URL input, angle picker, script review, and video player.</li>
-        <li>Demo mode runs end-to-end with cached data and no API keys.</li>
-        <li>Voice input via Speechmatics, platform auto-detection, and LLM fallback.</li>
-        <li>Every shared video URL is a marketing surface with a &ldquo;Make your own&rdquo; CTA.</li>
-      </ul>
-    </BeatLayout>
-  );
-}
-
-/* ---- Lenitnes ---- */
-function LenitnesWhat() {
-  const p = PROJECTS[2];
-  return (
-    <BeatLayout
-      kicker="03 / Lenitnes"
-      label="What it does"
-      title="Autonomous signal intelligence for consensus-critical code."
-      accent={p.accent}
-      muted={p.muted}
-      href={p.href}
-      repo={p.repo}
-      name={p.name}
-    >
-      <p>
-        Lenitnes watches public commits to consensus-critical cryptocurrency
-        repositories — Zcash, Bitcoin, Ethereum, Solana, Arbitrum, Sui — and
-        infers directional theses before the market prices them in. Each
-        signal is scored against a versioned rubric, timestamped on Hedera HCS,
-        and tracked as an explicitly-labeled paper position.
-      </p>
-      <p>
-        Price snapshots are taken at T+1h, T+4h, T+1d, and T+7d. The public
-        scorecard recomputes from the same tables the calls are written to —
-        the system cannot misremember its own performance.
-      </p>
-    </BeatLayout>
-  );
-}
-
-function LenitnesVision() {
-  const p = PROJECTS[2];
-  return (
-    <BeatLayout
-      kicker="03 / Lenitnes"
-      label="The vision"
-      title="The public track record is the sales proof."
-      accent={p.accent}
-      muted={p.muted}
-      href={p.href}
-      repo={p.repo}
-      name={p.name}
-    >
-      <p>
-        One engine serves two audiences. Publicly, the agent trades its own
-        theses in the open and builds a verifiable reputation. Enterprise
-        customers point the same nine detectors and versioned rubric at their
-        own repos to ask: what is our commit history telling the market before
-        we announce it?
-      </p>
-      <p>
-        The leak-scan direction turns a research tool into a recurring
-        intelligence product for protocols, custodians, and market makers who
-        need to know what their code is signaling before outsiders do.
-      </p>
-    </BeatLayout>
-  );
-}
-
-function LenitnesProof() {
-  const p = PROJECTS[2];
-  return (
-    <BeatLayout
-      kicker="03 / Lenitnes"
-      label="The proof"
-      title="The ZEC halo2 case study."
-      accent={p.accent}
-      muted={p.muted}
-      href={p.href}
-      repo={p.repo}
-      name={p.name}
-    >
-      <p className="text-foreground font-medium">
-        In late May 2026, a four-year-old soundness bug was discovered in
-        Zcash&apos;s halo2_gadgets crate. The emergency soft fork landed on 2
-        June; formal disclosure followed 4-5 June. ZEC dropped ~50% in 48
-        hours.
-      </p>
-      <ul className="space-y-3 list-disc pl-5 marker:text-accent">
-        <li>Replayed against public commits, the agent would have flagged a 95/100 conviction, four-detector-consensus SHORT at ~$600.</li>
-        <li>That is 2-3 days before the formal disclosure — a falsifiable, timestamped public track record.</li>
-        <li>Every signal is versioned and auditable; the scorecard cannot misremember its own calls.</li>
-        <li>Live surfaces: scorecard, calibration, methodology, portfolio, and repo replay.</li>
-      </ul>
-    </BeatLayout>
-  );
-}
-
-/* ---- DataBard ---- */
-function DataBardWhat() {
-  const p = PROJECTS[3];
-  return (
-    <BeatLayout
-      kicker="04 / DataBard"
-      label="What it does"
-      title="An AI analyst that makes your data estate audible."
-      accent={p.accent}
-      muted={p.muted}
-      href={p.href}
-      repo={p.repo}
-      name={p.name}
-    >
-      <p>
-        DataBard connects to OpenMetadata, dbt, The Graph, Dune, or any source
-        via SQL. Its analysis engine computes health scores, critical-table
-        rankings, coverage gaps, and PII flags, then renders the findings in
-        the formats people actually consume: two-host AI podcasts, music
-        anthems, dashboards, PDF reports, webhook alerts, and verifiable Solana
-        attestations.
-      </p>
-      <p>
-        Click any podcast segment to drill down into the columns, tests,
-        lineage, and tags behind the insight. The catalog is no longer a
-        graveyard — it becomes a conversation.
-      </p>
-    </BeatLayout>
-  );
-}
-
-function DataBardVision() {
-  const p = PROJECTS[3];
-  return (
-    <BeatLayout
-      kicker="04 / DataBard"
-      label="The vision"
-      title="Metadata finally gets consumed."
-      accent={p.accent}
-      muted={p.muted}
-      href={p.href}
-      repo={p.repo}
-      name={p.name}
-    >
-      <p>
-        Data teams spend weeks onboarding engineers to warehouse semantics. The
-        metadata is there, but nobody reads it. DataBard turns the same
-        analysis into podcasts, reports, and alerts so the right information
-        reaches the right person in the right format.
-      </p>
-      <p>
-        Alex is the enthusiastic advocate; Morgan is the skeptical auditor.
-        Their conversation surfaces cascading risks, ownership gaps, and stale
-        tables in plain language. The moat is a single analysis engine with
-        many output surfaces — every podcast, report, and alert reinforces the
-        same underlying metadata graph, so value compounds with each new
-        integration.
-      </p>
-    </BeatLayout>
-  );
-}
-
-function DataBardProof() {
-  const p = PROJECTS[3];
-  return (
-    <BeatLayout
-      kicker="04 / DataBard"
-      label="The proof"
-      title="Two-voice podcasts, on-chain audit trails, and live dashboards."
-      accent={p.accent}
-      muted={p.muted}
-      href={p.href}
-      repo={p.repo}
-      name={p.name}
-    >
-      <ul className="space-y-3 list-disc pl-5 marker:text-accent">
-        <li>Two-voice ElevenLabs TTS with context stitching for natural prosody.</li>
-        <li>Solana integration: minted episode records, Palm USD payments, health alerts, public leaderboard, gated replay.</li>
-        <li>Health analytics dashboard, README badges, and an event ledger for funnel analysis.</li>
-        <li>Tier 1 adapters for OpenMetadata, dbt, The Graph, Dune; Tier 2 Coral SQL escape hatch for 50+ sources.</li>
-      </ul>
-    </BeatLayout>
-  );
-}
-
-/* ---- Weft ---- */
-function WeftWhat() {
-  const p = PROJECTS[4];
-  return (
-    <BeatLayout
-      kicker="05 / Weft"
-      label="What it does"
-      title="Escrow that releases itself when agents agree."
-      accent={p.accent}
-      muted={p.muted}
-      href={p.href}
-      repo={p.repo}
-      name={p.name}
-    >
-      <p>
-        A sponsor locks capital behind a milestone. The builder ships. Three
-        independent verifier agents collect evidence — deployment state,
-        on-chain activity, GitHub commits, peer verdicts — and vote on whether
-        the deliverable was met. If two of three agree, the contract releases
-        funds automatically.
-      </p>
-      <p>
-        For confidential milestones, each agent encrypts its ballot and
-        confidence score with Zama FHE. The contract tallies votes on
-        ciphertext, so no verifier can see the others&apos; votes before casting
-        their own. Only the final verified boolean is ever decrypted.
-      </p>
-    </BeatLayout>
-  );
-}
-
-function WeftVision() {
-  const p = PROJECTS[4];
-  return (
-    <BeatLayout
-      kicker="05 / Weft"
-      label="The vision"
-      title="Trustless milestones become the default way to work."
-      accent={p.accent}
-      muted={p.muted}
-      href={p.href}
-      repo={p.repo}
-      name={p.name}
-    >
-      <p>
-        Freelancers, DAOs, and remote teams waste enormous energy chasing
-        payment, negotiating scope, and proving delivery. Weft removes the
-        politics by making verification a protocol: capital is escrowed, outcomes
-        are verified by autonomous agents, and reputation attaches to the
-        builder&apos;s ENS identity across every project they complete.
-      </p>
-      <p>
-        The agent itself is a self-sustaining participant. It earns a 3% fee
-        on every milestone it verifies, uses the revenue to pay for its own
-        infrastructure, and becomes a tiny autonomous company running onchain.
-        The moat is the cryptographically sealed consensus loop — not reputation
-        scores, but verifiable votes no single party can manipulate.
-      </p>
-    </BeatLayout>
-  );
-}
-
-function WeftProof() {
-  const p = PROJECTS[4];
-  return (
-    <BeatLayout
-      kicker="05 / Weft"
-      label="The proof"
-      title="Live on 0G and Sepolia with sealed FHE consensus."
-      accent={p.accent}
-      muted={p.muted}
-      href={p.href}
-      repo={p.repo}
-      name={p.name}
-    >
-      <ul className="space-y-3 list-disc pl-5 marker:text-accent">
-        <li>
-          Live deployments on 0G Galileo Testnet and Sepolia with verified
-          milestone contracts.
-        </li>
-        <li>
-          Two Zama FHE contract versions: addition-class sealed ballots and
-          multiplication-class confidence-weighted ballots.
-        </li>
-        <li>
-          Integration partners already in place: Zama, 0G, Gensyn/AXL,
-          KeeperHub, ENS, Hermes + Kimi, and fal.ai.
-        </li>
-        <li>
-          Full surfaces: sponsor dashboard, builder profile, verification
-          explorer, and agent operations console.
-        </li>
-      </ul>
-    </BeatLayout>
-  );
-}
-
-/* ---- Diversifi ---- */
-function DiversifiWhat() {
-  const p = PROJECTS[5];
-  return (
-    <BeatLayout
-      kicker="06 / Diversifi"
-      label="What it does"
-      title="FX-risk intelligence and autonomous treasury protection."
-      accent={p.accent}
-      muted={p.muted}
-      href={p.href}
-      repo={p.repo}
-      name={p.name}
-    >
-      <p>
-        DiversiFi quantifies the currency drag on working capital for businesses
-        that earn in one currency and must purchase in another. The Guardian agent
-        routes capital between Celo/Mento local stablecoins, Arbitrum deep
-        liquidity, and HashKey regulated-market savings, then executes protection
-        automatically — every decision recorded on the chain where the money moves.
-      </p>
-      <p>
-        AI reasoning is anchored to 0G for verifiable evidence, and premium
-        intelligence flows are gated by x402 nanopayments. The retail savings app
-        is top-of-funnel; the SME business intelligence layer is the real product.
-      </p>
-    </BeatLayout>
-  );
-}
-
-function DiversifiVision() {
-  const p = PROJECTS[5];
-  return (
-    <BeatLayout
-      kicker="06 / Diversifi"
-      label="The vision"
-      title="Every cross-currency business gets an autonomous treasury guard."
-      accent={p.accent}
-      muted={p.muted}
-      href={p.href}
-      repo={p.repo}
-      name={p.name}
-    >
-      <p>
-        No current player combines FX-risk quantification with autonomous execution.
-        DiversiFi makes the moat structural: a philosophy-driven values system
-        creates identity-based retention, while the Guardian turns working-capital
-        risk into a managed, auditable operating layer.
-      </p>
-      <p>
-        The expansion is from the retail saver who protects a wallet to the Ghanaian
-        importer, the US retailer sourcing from Europe, and the UK business paying
-        US suppliers — any company whose margins move when exchange rates do.
-      </p>
-    </BeatLayout>
-  );
-}
-
-function DiversifiProof() {
-  const p = PROJECTS[5];
-  return (
-    <BeatLayout
-      kicker="06 / Diversifi"
-      label="The proof"
-      title="Live on Celo, Arbitrum and 0G mainnets with verified ledgers."
-      accent={p.accent}
-      muted={p.muted}
-      href={p.href}
-      repo={p.repo}
-      name={p.name}
-    >
-      <ul className="space-y-3 list-disc pl-5 marker:text-accent">
-        <li>
-          Chain-aware RecommendationLedgers deployed on Celo Mainnet (savings),
-          Arbitrum Mainnet (yield), and 0G Mainnet (evidence anchor).
-        </li>
-        <li>
-          ERC-8004 agent identity and verified contracts on Celoscan, Arbiscan, and
-          0G ChainScan.
-        </li>
-        <li>
-          x402 nanopayment settlement rail for paid intelligence, with live
-          settlement metrics.
-        </li>
-        <li>
-          In-app Verifiable AI dashboard showing evidence CIDs, serving-model IDs,
-          and chain receipts.
-        </li>
-      </ul>
-    </BeatLayout>
+    </section>
   );
 }
 
@@ -983,11 +412,10 @@ function TheStudio() {
               Built to compound.
             </h2>
             <p className="mt-6 text-muted leading-relaxed">
-              Start with the Business X-ray to find the compounding risk costing
-              your business most. Then route to the Persidian agent built to stop
-              it. Each product serves a distinct enterprise buyer and ships with
-              real integrations — every integration hardens the next, and the
-              studio gets faster at deploying agents customers trust.
+              Each Persidian agent serves a different buyer and ships with real
+              integrations — and every integration hardens the next. Start with
+              the Business X-ray above, or tell us what hurts and we&apos;ll
+              show you the right agent running on your own data.
             </p>
             <div className="mt-8 flex flex-wrap items-center gap-4">
               <a
@@ -996,52 +424,25 @@ function TheStudio() {
               >
                 Connect on X →
               </a>
+              <Link
+                href="/studio"
+                className="text-sm font-medium text-muted hover:text-foreground transition-colors"
+              >
+                Read the studio thesis →
+              </Link>
             </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6" data-enter style={{ "--enter-delay": "80ms" } as React.CSSProperties}>
-            <Signal label="Live products" value={String(PROJECTS.length)} />
-            <Signal label="Public repositories" value={String(PROJECTS.length)} />
-            <Signal label="Production integrations" value="10+" />
-            <Signal label="Primary markets" value={String(PROJECTS.length)} />
-            <Signal label="Deployment model" value="Docker / VPS / Cloud" />
-            <Signal label="Studio status" value="Active" />
+          <div id="contact" data-enter style={{ "--enter-delay": "80ms" } as React.CSSProperties}>
+            <p className="section-label text-muted mb-4">Book a demo</p>
+            <ContactForm
+              submitLabel="Book a demo →"
+              intent="demo"
+              messagePlaceholder={`What hurts, and which systems does it live in? We'll reply from ${EMAIL}.`}
+            />
           </div>
         </div>
       </div>
     </section>
-  );
-}
-
-function Signal({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="p-5 rounded-2xl border border-border bg-background">
-      <p className="section-label text-muted mb-2">{label}</p>
-      <p className="text-xl sm:text-2xl font-semibold tracking-tight">{value}</p>
-    </div>
-  );
-}
-
-function Footer() {
-  return (
-    <footer className="px-5 sm:px-10 py-8 sm:py-10 border-t border-border bg-background flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-      <p className="text-xs font-mono text-muted">
-        © {new Date().getFullYear()} Persidian
-      </p>
-      <div className="flex items-center gap-5">
-        <a
-          href={`mailto:${EMAIL}`}
-          className="text-xs font-medium text-muted hover:text-foreground transition-colors"
-        >
-          {EMAIL}
-        </a>
-        <a
-          href={CONNECT_URL}
-          className="text-xs font-medium text-muted hover:text-foreground transition-colors"
-        >
-          Connect
-        </a>
-      </div>
-    </footer>
   );
 }

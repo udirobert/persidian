@@ -28,7 +28,9 @@ function smoothScrollToElement(id: string, offset = 80, duration = 1200) {
     const elapsed = now - startTime;
     const progress = Math.min(elapsed / duration, 1);
     const ease = 1 - Math.pow(1 - progress, 3);
-    window.scrollTo(0, startY + diff * ease);
+    // "instant" per frame so the CSS scroll-behavior:smooth on <html>
+    // doesn't re-animate (and lag) every step of this easing.
+    window.scrollTo({ top: startY + diff * ease, behavior: "instant" });
     if (progress < 1) {
       requestAnimationFrame(step);
     }
@@ -359,31 +361,12 @@ function ResultView({
   cardRef: React.RefObject<HTMLDivElement | null>;
 }) {
   const product = result.product;
-  const [autoScrollEnabled, setAutoScrollEnabled] = useState(true);
-
-  useEffect(() => {
-    if (!product || !autoScrollEnabled) return;
-    const timer = setTimeout(() => {
-      smoothScrollToElement(product.iconName);
-    }, 8000);
-    return () => clearTimeout(timer);
-  }, [product, autoScrollEnabled]);
 
   const confidenceLabel: Record<string, string> = {
     high: "High-confidence match",
     medium: "Solid match",
     low: "Possible match",
   };
-
-  const mailtoSubject = product
-    ? `Persidian demo — ${product.name}`
-    : "Persidian demo request";
-  const mailtoBody = product
-    ? `Hi Persidian team,\n\nThe Business X-ray pointed me toward ${product.name}. I'd like to book a demo.\n\nReasoning: ${result.reasoning}`
-    : "Hi Persidian team,\n\nI'd like to discuss which Persidian product fits my business.";
-  const mailtoUrl = `mailto:${EMAIL}?subject=${encodeURIComponent(
-    mailtoSubject
-  )}&body=${encodeURIComponent(mailtoBody)}`;
 
   return (
     <div
@@ -419,7 +402,7 @@ function ResultView({
           </div>
 
           <div
-            className="rounded-xl bg-muted/30 p-5 border-l-4"
+            className="rounded-xl bg-border/30 p-5 border-l-4"
             style={{ borderLeftColor: product.accent }}
           >
             <p className="text-[10px] sm:text-xs font-mono uppercase tracking-wider text-muted mb-1">
@@ -436,22 +419,22 @@ function ResultView({
               answers={answers}
               accent={accent}
               initialMessage={result.agentSays}
-              onUserMessage={() => setAutoScrollEnabled(false)}
-              className="rounded-2xl border border-border bg-muted/20 p-4 sm:p-5"
+              className="rounded-2xl border border-border bg-border/20 p-4 sm:p-5"
             />
           )}
 
           <div className="flex flex-wrap items-center gap-3">
-            <a
-              href={mailtoUrl}
+            <button
+              type="button"
+              onClick={() => smoothScrollToElement("contact")}
               className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-background text-sm font-medium hover:opacity-90 active:scale-[0.97] transition-transform"
               style={{ backgroundColor: accent || product.accent }}
             >
               Book a demo →
-            </a>
+            </button>
             <button
               type="button"
-              onClick={() => smoothScrollToElement(product.iconName)}
+              onClick={() => smoothScrollToElement(product.name.toLowerCase())}
               className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-border text-sm font-medium hover:border-foreground/30 transition-colors"
             >
               See the case
@@ -479,12 +462,13 @@ function ResultView({
           </h3>
           <p className="mt-2 text-muted leading-relaxed">{result.reasoning}</p>
           <div className="mt-6 flex flex-wrap items-center gap-3">
-            <a
-              href={mailtoUrl}
+            <button
+              type="button"
+              onClick={() => smoothScrollToElement("contact")}
               className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-foreground text-background text-sm font-medium hover:opacity-90 active:scale-[0.97] transition-transform"
             >
               Book a demo →
-            </a>
+            </button>
             <button
               type="button"
               onClick={onRestart}
@@ -511,14 +495,12 @@ function ChatPanel({
   answers,
   accent,
   initialMessage,
-  onUserMessage,
   className = "",
 }: {
   product: BaseProject;
   answers: DiagnosticAnswers;
   accent?: string;
   initialMessage?: string;
-  onUserMessage?: () => void;
   className?: string;
 }) {
   const MESSAGE_LIMIT = 10;
@@ -545,7 +527,6 @@ function ChatPanel({
     const text = input.trim();
     if (!text || loading || limitReached) return;
 
-    onUserMessage?.();
     setMessages((prev) => [...prev, { role: "user", content: text }]);
     setInput("");
     setLoading(true);

@@ -5,6 +5,9 @@ export interface BaseProject {
   repo: string;
   tagline: string;
   thesisLabel: string;
+  /** Scale of the problem this agent works on, from public data. */
+  problemStat: string;
+  problemLabel: string;
   iconName: string;
   shot: string;
   bg: string;
@@ -23,6 +26,8 @@ export const PRODUCTS: BaseProject[] = [
     tagline:
       "Get paid faster, with Xero. AI credit controller and bookkeeper that ages receivables, benchmarks your sector, and chases overdue invoices.",
     thesisLabel: "Money in",
+    problemStat: "£20bn+",
+    problemLabel: "owed to UK small businesses in overdue invoices at any one time",
     iconName: "receipt",
     shot: "/shots/sikizana.png",
     bg: "#faf8f5",
@@ -39,6 +44,8 @@ export const PRODUCTS: BaseProject[] = [
     tagline:
       "Send a video they'll actually watch. Multi-agent video personalization for sales, recruiting, and investor outreach.",
     thesisLabel: "Messages out",
+    problemStat: "<5%",
+    problemLabel: "of cold outreach ever gets a reply",
     iconName: "paperPlane",
     shot: "/shots/nuncio.png",
     bg: "#f6f3ea",
@@ -55,6 +62,8 @@ export const PRODUCTS: BaseProject[] = [
     tagline:
       "Autonomous signal intelligence. Reads commits to consensus-critical code, commits theses on-chain, and tracks an undeniable public scorecard.",
     thesisLabel: "Theses tested",
+    problemStat: "48 hrs",
+    problemLabel: "for ZEC to lose half its value after a years-old code flaw surfaced",
     iconName: "pulse",
     shot: "/shots/lenitnes.png",
     bg: "#0c1013",
@@ -71,6 +80,8 @@ export const PRODUCTS: BaseProject[] = [
     tagline:
       "Watches your data estate. Health scores, lineage risk, and PII flags — delivered as podcasts, dashboards, reports, and on-chain attestations.",
     thesisLabel: "Data trusted",
+    problemStat: "$12.9M",
+    problemLabel: "average annual cost of poor data quality per organisation",
     iconName: "watcher",
     shot: "/shots/databard.png",
     bg: "#f5ede0",
@@ -82,11 +93,13 @@ export const PRODUCTS: BaseProject[] = [
   {
     number: "05",
     name: "Weft",
-    href: "https://weft.persidian.com",
+    href: "https://weft.thisyearnofear.com",
     repo: "https://github.com/thisyearnofear/weft",
     tagline:
-      "Escrow that releases itself. FHE-sealed agent consensus verifies milestones and unlocks capital without manual review.",
-    thesisLabel: "Capital released",
+      "When a grantee marks a milestone complete, Weft checks your checklist and writes a verification receipt onto that grant record.",
+    thesisLabel: "Tranche unblocked",
+    problemStat: "11–20 hrs",
+    problemLabel: "per week grants teams spend on manual entry, reporting, and post-award paperwork",
     iconName: "weave",
     shot: "/shots/weft.png",
     bg: "#f4f8f7",
@@ -103,6 +116,8 @@ export const PRODUCTS: BaseProject[] = [
     tagline:
       "Risk-aware, values-driven treasury management. Quantifies FX drag on working capital and autonomously flattens it — every decision recorded on-chain with AI reasoning anchored to 0G.",
     thesisLabel: "Currency guarded",
+    problemStat: "10%+",
+    problemLabel: "routine yearly swing in major currency pairs — bigger than most trading margins",
     iconName: "diversifi",
     shot: "/shots/diversifi.png",
     bg: "#f0f4f9",

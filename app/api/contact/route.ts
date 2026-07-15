@@ -15,7 +15,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
   }
 
-  const { name, org, message } = body as Record<string, unknown>;
+  const { name, org, message, intent } = body as Record<string, unknown>;
 
   if (typeof message !== "string" || message.trim().length === 0) {
     return NextResponse.json({ error: "Message is required" }, { status: 400 });
@@ -32,7 +32,8 @@ export async function POST(request: Request) {
     );
   }
 
-  const subject = `Persidian — deck request from ${cleanOrg || cleanName || "interested party"}`;
+  const requestKind = intent === "deck" ? "deck request" : "demo request";
+  const subject = `Persidian — ${requestKind} from ${cleanOrg || cleanName || "interested party"}`;
   const composedBody = [
     `Name: ${cleanName || "Not provided"}`,
     `Organisation: ${cleanOrg || "Not provided"}`,

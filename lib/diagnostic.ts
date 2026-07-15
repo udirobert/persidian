@@ -44,9 +44,9 @@ const SIGNALS: Record<string, SignalMap> = {
     tools: ["dbt", "snowflake", "bigquery", "openmetadata", "dune", "looker", "tableau"],
   },
   weft: {
-    roles: ["legal", "operations", "hr", "founder"],
-    pains: ["escrow", "milestones", "contracts", "freelancers", "payments", "scope", "delivery"],
-    tools: ["contracts", "notion", "jira", "deel", "ironclad"],
+    roles: ["grants", "program", "foundation", "operations"],
+    pains: ["grants", "milestones", "tranche", "disbursement", "verification", "compliance", "reporting"],
+    tools: ["fluxx", "foundant", "amplifund", "submittable"],
   },
   diversifi: {
     roles: ["treasury", "risk", "finance", "operations"],
@@ -262,12 +262,19 @@ export function generateAgentSays(
   answers: DiagnosticAnswers,
   product: BaseProject
 ): string {
-  const role =
-    answers.role?.split("/")[0]?.trim() ?? "Your team";
-  const pain = answers.painPoints?.[0] ?? "this pattern";
+  const role = answers.role?.split("/")[0]?.trim().toLowerCase();
+  const pain = answers.painPoints?.[0];
   const timeline = answers.timeline ?? "Later / exploring";
 
-  return `${pick(patternQuips)} ${role} + ${pain} + ${product.name} = a clear next move. ${pick(
+  const match = pain
+    ? `${pain} — that's the risk ${product.name} was built to stop${
+        role ? `, and one that lands on ${role} teams first` : ""
+      }.`
+    : `${product.name} is the closest match to what you described${
+        role ? ` — it does its best work for ${role} teams` : ""
+      }.`;
+
+  return `${pick(patternQuips)} ${match} ${pick(
     timelineQuips[timeline] ?? timelineQuips["Later / exploring"]
   )} ${pick(ctaQuips)}`;
 }
@@ -282,8 +289,9 @@ export const DIAGNOSTIC_QUESTIONS = [
       "Sales / Marketing / Growth",
       "Engineering / Protocol / Security",
       "Data / Analytics",
-      "Operations / Legal / HR",
+      "Grants / Program / Foundation ops",
       "Treasury / Risk",
+      "Legal / HR / Compliance",
       "Founder / General Management",
     ],
   },
@@ -296,7 +304,7 @@ export const DIAGNOSTIC_QUESTIONS = [
       "Low reply rates on cold outreach",
       "Code changes that affect consensus or security",
       "Data nobody reads or trusts",
-      "Contract, milestone, or freelancer payment disputes",
+      "Grant milestones claimed but tranche stuck in review",
       "Cross-currency FX drag",
     ],
   },
@@ -309,7 +317,7 @@ export const DIAGNOSTIC_QUESTIONS = [
       "Salesforce / HubSpot / LinkedIn",
       "GitHub / GitLab",
       "Warehouse / dbt / OpenMetadata / Dune",
-      "Escrow / Notion / Jira",
+      "Fluxx / Foundant / AmpliFund / Submittable",
       "Stablecoins / Mento / DeFi / international payments",
     ],
   },
