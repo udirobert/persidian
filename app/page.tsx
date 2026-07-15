@@ -4,6 +4,7 @@ import { BraunClock } from "@/components/BraunClock";
 import { StaggeredGrid } from "@/components/StaggeredGrid";
 import { BatonRule } from "@/components/BatonRule";
 import { Diagnostic } from "@/components/Diagnostic";
+import { PinnedSection } from "@/components/PinnedSection";
 import { ContactForm } from "@/components/ContactForm";
 import { MobileXrayCta } from "@/components/MobileXrayCta";
 import { Header, Footer, CONNECT_URL, EMAIL } from "@/components/SiteChrome";
@@ -116,7 +117,7 @@ export default function Home() {
         <BatonRule />
 
         {PROJECTS.map((p) => (
-          <ProductSection key={p.name} project={p} productCase={CASES[p.name]} />
+          <PinnedProductSection key={p.name} project={p} productCase={CASES[p.name]} />
         ))}
 
         <BatonRule />
@@ -333,7 +334,55 @@ function PortfolioIndex() {
   );
 }
 
-function ProductSection({
+function BeatLayout({
+  project: p,
+  label,
+  title,
+  children,
+}: {
+  project: Project;
+  label: string;
+  title: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-start">
+      <div className="lg:col-span-4">
+        <p className="section-kicker mb-2" style={{ color: p.muted }}>
+          {p.number} / {p.name}
+        </p>
+        <p className="section-label" style={{ color: p.accent }}>{label}</p>
+        <h2 className="mt-4 text-2xl sm:text-4xl lg:text-5xl font-semibold tracking-tight leading-[1.1]">
+          {title}
+        </h2>
+        <div className="mt-6 flex flex-wrap items-center gap-3">
+          <a
+            href={p.href}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs font-medium hover:opacity-80 transition-opacity"
+            style={{ borderColor: p.accent, color: p.accent }}
+          >
+            Visit {p.name} →
+          </a>
+          <a
+            href={p.repo}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs font-medium hover:opacity-80 transition-opacity"
+            style={{
+              borderColor: "color-mix(in srgb, currentColor 20%, transparent)",
+              color: p.muted,
+            }}
+          >
+            Source
+          </a>
+        </div>
+      </div>
+      <div className="lg:col-span-8 text-base sm:text-lg leading-relaxed space-y-5" style={{ color: p.muted }}>
+        {children}
+      </div>
+    </div>
+  );
+}
+
+function PinnedProductSection({
   project: p,
   productCase,
 }: {
@@ -341,62 +390,39 @@ function ProductSection({
   productCase: ProductCase;
 }) {
   return (
-    <section
-      aria-label={p.name}
-      id={p.name.toLowerCase()}
-      className="lg:min-h-screen flex items-center px-5 sm:px-10 py-20 sm:py-24"
-      style={{ background: p.bg, color: p.fg }}
-    >
-      <div className="w-full max-w-5xl mx-auto">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-start">
-          <div className="lg:col-span-4">
-            <p className="section-kicker mb-2" style={{ color: p.muted }}>
-              {p.number} / {p.name}
-            </p>
-            <p className="section-label" style={{ color: p.accent }}>
-              {p.thesisLabel}
-            </p>
-            <h2 className="mt-4 text-2xl sm:text-4xl lg:text-5xl font-semibold tracking-tight leading-[1.1]">
-              {productCase.title}
-            </h2>
-            <div className="mt-6 flex flex-wrap items-center gap-3">
-              <a
-                href={p.href}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs font-medium hover:opacity-80 transition-opacity"
-                style={{ borderColor: p.accent, color: p.accent }}
-              >
-                Visit {p.name} →
-              </a>
-              <a
-                href={p.repo}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs font-medium hover:opacity-80 transition-opacity"
-                style={{
-                  borderColor: "color-mix(in srgb, currentColor 20%, transparent)",
-                  color: p.muted,
-                }}
-              >
-                Source
-              </a>
-            </div>
-          </div>
-          <div className="lg:col-span-8 text-base sm:text-lg leading-relaxed space-y-5" style={{ color: p.muted }}>
+    <section aria-label={p.name}>
+      <PinnedSection
+        id={p.name.toLowerCase()}
+        style={{ background: p.bg, color: p.fg }}
+      >
+        {[
+          <BeatLayout
+            key="case"
+            project={p}
+            label={p.thesisLabel}
+            title={productCase.title}
+          >
             {productCase.body.map((paragraph, i) => (
               <p key={i}>{paragraph}</p>
             ))}
+          </BeatLayout>,
+          <BeatLayout
+            key="proof"
+            project={p}
+            label="The proof"
+            title="Why believe it."
+          >
             <div
-              className="pt-5 pl-4 border-l-2"
+              className="pt-2 pl-4 border-l-2"
               style={{ borderColor: p.accent }}
             >
-              <p className="section-label mb-2" style={{ color: p.accent }}>
-                The proof
-              </p>
-              <p className="font-medium" style={{ color: p.fg }}>
+              <p className="text-lg sm:text-xl font-medium leading-relaxed" style={{ color: p.fg }}>
                 {productCase.proof}
               </p>
             </div>
-          </div>
-        </div>
-      </div>
+          </BeatLayout>,
+        ]}
+      </PinnedSection>
     </section>
   );
 }
