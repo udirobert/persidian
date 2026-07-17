@@ -59,6 +59,14 @@ export function buildAgentCard() {
         safe: true,
         requires_auth: false,
       },
+      {
+        id: "save_xray_report",
+        method: "POST",
+        path: "/api/reports",
+        description: "Save a consent-based shareable X-ray report (30-day retention)",
+        safe: true,
+        requires_auth: false,
+      },
     ],
     products: PRODUCTS.map((p) => ({
       name: p.name,

@@ -80,6 +80,63 @@ export function buildOpenApiSpec() {
           },
         },
       },
+      "/api/reports": {
+        post: {
+          operationId: "saveXrayReport",
+          summary: "Save a shareable Business X-ray report",
+          description:
+            "Persists a report only when consent is true. Returns a share URL and deletion token. Reports expire after 30 days by default.",
+          tags: ["X-ray"],
+          requestBody: {
+            required: true,
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  required: ["consent", "path", "answers", "recommendation"],
+                  properties: {
+                    consent: { type: "boolean", enum: [true] },
+                    email: { type: "string", format: "email" },
+                    path: { type: "string", enum: ["url", "manual"] },
+                  },
+                },
+              },
+            },
+          },
+          responses: {
+            "200": { description: "Report saved with share URL" },
+            "400": { description: "Invalid payload" },
+            "429": { description: "Rate limit exceeded" },
+          },
+        },
+      },
+      "/api/reports/{id}": {
+        get: {
+          operationId: "getXrayReport",
+          summary: "Fetch a saved X-ray report",
+          tags: ["X-ray"],
+          parameters: [
+            { name: "id", in: "path", required: true, schema: { type: "string", format: "uuid" } },
+          ],
+          responses: {
+            "200": { description: "Public report payload" },
+            "404": { description: "Not found or expired" },
+          },
+        },
+        delete: {
+          operationId: "deleteXrayReport",
+          summary: "Delete a saved report with deletion token",
+          tags: ["X-ray"],
+          parameters: [
+            { name: "id", in: "path", required: true, schema: { type: "string", format: "uuid" } },
+            { name: "X-Deletion-Token", in: "header", schema: { type: "string" } },
+          ],
+          responses: {
+            "200": { description: "Report deleted" },
+            "404": { description: "Not found or invalid token" },
+          },
+        },
+      },
       "/api/chat": {
         post: {
           operationId: "conciergeChat",

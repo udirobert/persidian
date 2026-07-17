@@ -10,6 +10,7 @@ import {
 } from "@/lib/diagnostic";
 import type { ScanFact, ScanResult } from "@/lib/site-scan/types";
 import type { BaseProject } from "@/lib/products";
+import { ShareReportPanel } from "@/components/ShareReportPanel";
 
 const EMAIL = "hello@persidian.com";
 
@@ -246,6 +247,10 @@ export function Diagnostic({ accent }: DiagnosticProps) {
         result={result}
         answers={answers}
         scanResult={scanResult}
+        confirmedFactIds={Object.entries(confirmedFacts)
+          .filter(([, confirmed]) => confirmed)
+          .map(([id]) => id)}
+        path={scanResult ? "url" : "manual"}
         accent={accent}
         liveScores={liveScores}
         onRestart={reset}
@@ -615,6 +620,8 @@ function ResultView({
   result,
   answers,
   scanResult,
+  confirmedFactIds,
+  path,
   accent,
   liveScores,
   onRestart,
@@ -623,6 +630,8 @@ function ResultView({
   result: DiagnosticResult;
   answers: DiagnosticAnswers;
   scanResult: ScanResult | null;
+  confirmedFactIds: string[];
+  path: "url" | "manual";
   accent?: string;
   liveScores: ReturnType<typeof scoreAnswers>;
   onRestart: () => void;
@@ -730,6 +739,18 @@ function ResultView({
             limit={3}
             showTooltips
           />
+
+          <ShareReportPanel
+            result={result}
+            answers={answers}
+            scanResult={
+              scanResult
+                ? { url: scanResult.url, domain: scanResult.domain, facts: scanResult.facts }
+                : null
+            }
+            confirmedFactIds={confirmedFactIds}
+            path={path}
+          />
         </div>
       ) : (
         <>
@@ -753,6 +774,14 @@ function ResultView({
               Start over
             </button>
           </div>
+
+          <ShareReportPanel
+            result={result}
+            answers={answers}
+            scanResult={null}
+            confirmedFactIds={confirmedFactIds}
+            path={path}
+          />
         </>
       )}
 

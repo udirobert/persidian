@@ -28,6 +28,19 @@ export default function TrustPage() {
         </p>
       </ContentSection>
 
+      <ContentSection title="Business X-ray — saved reports">
+        <p>
+          If you choose to save a shareable report, we store the recommendation, your answers, and
+          public scan findings for up to 30 days. Reports are accessible only via an unguessable
+          link. Optional email is used only for follow-up if you provide it.
+        </p>
+        <p className="mt-3">
+          Each saved report includes a deletion token. Use it with{" "}
+          <code className="text-sm text-foreground">DELETE /api/reports/[id]</code> or email
+          hello@persidian.com to request removal.
+        </p>
+      </ContentSection>
+
       <ContentSection title="Business X-ray — URL scans">
         <p>
           When you submit a company website, Persidian inspects public pages only. No login, no
