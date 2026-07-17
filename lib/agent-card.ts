@@ -21,7 +21,7 @@ export function buildAgentCard() {
       sameAs: [FOUNDER_X, FOUNDER_GITHUB],
     },
     operating_principle:
-      "Agents act inside the systems where risk lives, with a human approval gate on every write or execution.",
+      "Agents act inside the systems where risk lives. Write-back and execution are gated per product — see each agent entity page for approval boundaries.",
     trust: {
       data_handling: `${SITE_URL}/trust`,
       security: `${SITE_URL}/security`,

@@ -149,3 +149,63 @@ export async function fetchRobotsTxt(
 export function robotsDisallowsAll(robots: string | null, path = "/"): boolean {
   return isPathBlocked(robots, path);
 }
+
+export async function fetchPublicText(
+  startUrl: string,
+  validateRedirect: (url: URL) => Promise<URL>,
+  revalidateHost?: (url: string) => Promise<void>,
+  maxBytes = 256_000
+): Promise<{ finalUrl: string; text: string; status: number }> {
+  let current = startUrl;
+
+  for (let i = 0; i <= MAX_REDIRECTS; i++) {
+    if (revalidateHost) {
+      await revalidateHost(current);
+    }
+
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
+
+    try {
+      const response = await fetch(current, {
+        signal: controller.signal,
+        redirect: "manual",
+        headers: {
+          "User-Agent": "Persidian-Xray/1.0 (+https://persidian.com/trust)",
+          Accept: "text/plain,text/xml,application/xml,application/xhtml+xml,text/html",
+        },
+      });
+      clearTimeout(timeout);
+
+      if (response.status >= 300 && response.status < 400) {
+        const location = response.headers.get("location");
+        if (!location) {
+          throw new Error("Redirect without location header");
+        }
+        const next = await validateRedirect(new URL(location, current));
+        current = next.toString();
+        continue;
+      }
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+
+      const text = await readLimitedText(response, maxBytes);
+
+      return {
+        finalUrl: current,
+        text,
+        status: response.status,
+      };
+    } catch (error) {
+      clearTimeout(timeout);
+      if (error instanceof Error && error.name === "AbortError") {
+        throw new Error("Request timed out");
+      }
+      throw error;
+    }
+  }
+
+  throw new Error("Too many redirects");
+}

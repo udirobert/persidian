@@ -21,10 +21,10 @@ export default function TrustPage() {
     <ContentPage title="Trust and data handling" kicker="Trust">
       <ContentSection title="Operating principle">
         <p>
-          Every Persidian agent acts inside the systems where risk lives — and keeps a human at the
-          approval gate on every write or execution. The Business X-ray follows the same pattern:
-          show what was found, label what was inferred, and ask only what the public web cannot
-          answer.
+          Persidian agents act inside the systems where risk lives. Write-back and execution are
+          gated per product — see each agent entity page for specific approval boundaries. The
+          Business X-ray follows the same pattern: show what was found, label what was inferred,
+          and ask only what the public web cannot answer.
         </p>
       </ContentSection>
 
@@ -47,9 +47,10 @@ export default function TrustPage() {
 
       <ContentSection title="Business X-ray — URL scans">
         <p>
-          When you submit a company website, Persidian inspects public pages only. No login, no
-          changes to your site, and no email required to start. Scans are anonymous and ephemeral
-          unless you choose to save or share a report.
+          When you submit a company website, Persidian inspects public pages only — typically the
+          homepage plus up to four high-signal paths (about, integrations, security, and similar)
+          when robots.txt allows. No login, no changes to your site, and no email required to
+          start. Scans are anonymous and ephemeral unless you choose to save or share a report.
         </p>
         <ul className="list-disc pl-5 space-y-2 mt-3">
           <li>We read publicly accessible HTTP/HTTPS content and respect robots.txt.</li>

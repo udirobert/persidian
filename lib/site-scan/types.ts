@@ -38,6 +38,7 @@ export interface ScanResult {
   escalatedToBrowser: boolean;
   regions: string[];
   integrations: string[];
+  pagesInspected: string[];
 }
 
 export interface ScanRequest {

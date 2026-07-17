@@ -1,5 +1,6 @@
 import type { DiagnosticAnswers } from "@/lib/diagnostic";
 import type { ExtractedPage } from "@/lib/site-scan/extract";
+import type { PageExtract } from "@/lib/site-scan/merge";
 import type {
   FactReviewStatus,
   FactSignals,
@@ -88,9 +89,42 @@ export function deriveAnswersFromFactReview(
   return answers;
 }
 
-export function buildFacts(page: ExtractedPage, pageUrl: string): ScanFact[] {
+function sourcesForPages(entries: PageExtract[]): { label: string; url: string }[] {
+  return entries.map(({ url }) => ({
+    label: new URL(url).pathname || "/",
+    url,
+  }));
+}
+
+function sourcesWhere(
+  entries: PageExtract[],
+  predicate: (page: ExtractedPage) => boolean
+): { label: string; url: string }[] {
+  return entries
+    .filter(({ page }) => predicate(page))
+    .map(({ url }) => ({
+      label: new URL(url).pathname || "/",
+      url,
+    }));
+}
+
+export function buildFacts(entries: PageExtract[]): ScanFact[] {
+  if (!entries.length) return [];
+
+  const primary = entries[0];
+  const page = entries.length === 1
+    ? primary.page
+    : {
+        ...primary.page,
+        textSample: entries.map(({ page: p }) => p.textSample).join("\n\n").slice(0, 16_000),
+        internalLinks: unique(entries.flatMap(({ page: p }) => p.internalLinks)),
+        integrations: unique(entries.flatMap(({ page: p }) => p.integrations)),
+        regions: unique(entries.flatMap(({ page: p }) => p.regions)),
+      };
+
   const facts: ScanFact[] = [];
-  const source = { label: "Submitted page", url: pageUrl };
+  const primarySource = { label: "Homepage", url: primary.url };
+  const allSources = sourcesForPages(entries);
   const integrationTools = toolsFromIntegrations(page.integrations);
   const integrationRole = roleFromIntegrations(page.integrations);
 
@@ -100,7 +134,17 @@ export function buildFacts(page: ExtractedPage, pageUrl: string): ScanFact[] {
       kind: "found",
       text: page.description || page.h1 || page.title || "Company website detected",
       confidence: "high",
-      sources: [source],
+      sources: [primarySource],
+    });
+  }
+
+  if (entries.length > 1) {
+    facts.push({
+      id: "pages-inspected",
+      kind: "found",
+      text: `Inspected ${entries.length} public pages (homepage plus high-signal paths such as about, integrations, or security when available)`,
+      confidence: "high",
+      sources: allSources,
     });
   }
 
@@ -110,7 +154,7 @@ export function buildFacts(page: ExtractedPage, pageUrl: string): ScanFact[] {
       kind: "inferred",
       text: page.businessModel === "b2b" ? "Likely B2B motion" : "Likely B2C motion",
       confidence: "medium",
-      sources: [source],
+      sources: allSources,
     });
   }
 
@@ -120,7 +164,9 @@ export function buildFacts(page: ExtractedPage, pageUrl: string): ScanFact[] {
       kind: "found",
       text: `Markets mentioned: ${page.regions.join(", ")}`,
       confidence: "medium",
-      sources: [source],
+      sources: sourcesWhere(entries, (p) => p.regions.length > 0).length
+        ? sourcesWhere(entries, (p) => p.regions.length > 0)
+        : allSources,
     });
   }
 
@@ -134,7 +180,7 @@ export function buildFacts(page: ExtractedPage, pageUrl: string): ScanFact[] {
       kind: "found",
       text: `Public integrations or tools referenced: ${page.integrations.join(", ")}`,
       confidence: "high",
-      sources: [source],
+      sources: sourcesWhere(entries, (p) => p.integrations.length > 0),
       signals,
     });
   }
@@ -145,7 +191,13 @@ export function buildFacts(page: ExtractedPage, pageUrl: string): ScanFact[] {
       kind: "found",
       text: "Public integrations or trust pages detected in site navigation",
       confidence: "medium",
-      sources: [source],
+      sources: sourcesWhere(entries, (p) =>
+        p.internalLinks.some((l) => /integrat|partner|platform|security|trust/i.test(l))
+      ).length
+        ? sourcesWhere(entries, (p) =>
+            p.internalLinks.some((l) => /integrat|partner|platform|security|trust/i.test(l))
+          )
+        : allSources,
     });
   }
 
@@ -153,12 +205,15 @@ export function buildFacts(page: ExtractedPage, pageUrl: string): ScanFact[] {
     (p) => p.pain
   );
   for (const pain of unique(matchedPains).slice(0, 2)) {
+    const pattern = PAIN_SIGNALS.find((p) => p.pain === pain)?.pattern;
     facts.push({
       id: `pain-${pain}`,
       kind: "inferred",
       text: `${pain} may be operationally relevant based on site language`,
       confidence: "medium",
-      sources: [source],
+      sources: pattern
+        ? sourcesWhere(entries, (p) => pattern.test(p.textSample))
+        : allSources,
       signals: { painPoints: [pain] },
     });
   }

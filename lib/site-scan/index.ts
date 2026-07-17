@@ -4,10 +4,15 @@ import {
   type ExtractedPage,
 } from "@/lib/site-scan/extract";
 import {
+  buildPageUrl,
+  discoverSupplementalPaths,
+} from "@/lib/site-scan/discover";
+import {
   fetchPublicPage,
   fetchRobotsTxt,
   robotsDisallowsAll,
 } from "@/lib/site-scan/fetch";
+import { mergeExtractedPages, type PageExtract } from "@/lib/site-scan/merge";
 import {
   buildFacts,
   buildFollowUpQuestion,
@@ -29,7 +34,7 @@ export async function scanWebsite(rawUrl: string): Promise<ScanResult> {
   const steps: ScanProgressStep[] = [
     { id: "validate", label: "Validating URL", status: "active" },
     { id: "robots", label: "Reading robots.txt", status: "pending" },
-    { id: "homepage", label: "Reading homepage", status: "pending" },
+    { id: "pages", label: "Reading public pages", status: "pending" },
     { id: "extract", label: "Extracting public facts", status: "pending" },
     { id: "browser", label: "Checking public integrations", status: "pending" },
     { id: "compare", label: "Comparing possible risks", status: "pending" },
@@ -61,10 +66,41 @@ export async function scanWebsite(rawUrl: string): Promise<ScanResult> {
     validateRedirectUrl,
     revalidate
   );
+
+  const homepageExtract: ExtractedPage = extractFromHtml(html, finalUrl);
+  const homepagePath = new URL(finalUrl).pathname;
+  const supplementalPaths = await discoverSupplementalPaths(
+    origin,
+    homepagePath,
+    homepageExtract.internalLinks,
+    robots,
+    validateRedirectUrl,
+    revalidate
+  );
+
+  const pageExtracts: PageExtract[] = [{ url: finalUrl, page: homepageExtract }];
+
+  for (const path of supplementalPaths) {
+    try {
+      const pageUrl = buildPageUrl(origin, path);
+      const { finalUrl: resolvedUrl, html: pageHtml } = await fetchPublicPage(
+        pageUrl,
+        validateRedirectUrl,
+        revalidate
+      );
+      pageExtracts.push({
+        url: resolvedUrl,
+        page: extractFromHtml(pageHtml, resolvedUrl),
+      });
+    } catch {
+      // skip pages that fail to load
+    }
+  }
+
   steps[2].status = "done";
   steps[3].status = "active";
 
-  let page: ExtractedPage = extractFromHtml(html, finalUrl);
+  const { merged: page, inspectedUrls } = mergeExtractedPages(pageExtracts);
   let escalatedToBrowser = false;
 
   steps[3].status = "done";
@@ -73,7 +109,8 @@ export async function scanWebsite(rawUrl: string): Promise<ScanResult> {
   if (needsBrowserEscalation(page) && process.env.TINYFISH_API_KEY) {
     const tiny = await runTinyFishExtract(finalUrl);
     if (tiny) {
-      page = mergeTinyFishFacts(page, tiny);
+      const mergedPage = mergeTinyFishFacts(page, tiny);
+      pageExtracts[0] = { url: finalUrl, page: mergedPage };
       escalatedToBrowser = true;
     }
   } else if (needsBrowserEscalation(page)) {
@@ -85,7 +122,7 @@ export async function scanWebsite(rawUrl: string): Promise<ScanResult> {
   if (steps[4].status === "active") steps[4].status = "done";
   steps[5].status = "active";
 
-  const facts = buildFacts(page, finalUrl);
+  const facts = buildFacts(pageExtracts);
   const followUpQuestion = buildFollowUpQuestion(page, facts, {});
   const suggestedAnswers = mapToDiagnosticAnswers(page);
 
@@ -103,6 +140,7 @@ export async function scanWebsite(rawUrl: string): Promise<ScanResult> {
     escalatedToBrowser,
     regions: page.regions,
     integrations: page.integrations,
+    pagesInspected: inspectedUrls,
   };
 }
 

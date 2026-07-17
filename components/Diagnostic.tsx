@@ -289,7 +289,7 @@ export function Diagnostic({ accent }: DiagnosticProps) {
           </button>
         </div>
         <p className="mt-4 text-xs text-muted leading-relaxed">
-          We read the submitted public page only. No login, no changes, no email required. You review every inference.{" "}
+          We read public pages only (homepage plus a few high-signal paths when available). No login, no changes, no email required. You review every inference.{" "}
           <Link href="/trust" className="underline underline-offset-4 hover:text-foreground transition-colors">
             How scanning works
           </Link>
@@ -318,7 +318,7 @@ export function Diagnostic({ accent }: DiagnosticProps) {
       <div ref={cardRef} className="rounded-2xl border border-border bg-background p-6 sm:p-8" data-enter>
         <p className="section-kicker text-muted mb-5">Analyzing {websiteUrl}</p>
         <p className="text-sm text-muted mb-6">
-          Reading the submitted public page and extracting cited facts.
+          Reading public pages and extracting cited facts.
         </p>
         <div className="h-1 w-full rounded-full bg-border overflow-hidden">
           <div className="h-full w-1/3 rounded-full bg-accent animate-pulse" />
@@ -510,7 +510,23 @@ function FactsReview({
         {scanResult.title ?? scanResult.domain}
       </h3>
       {scanResult.description && (
-        <p className="text-sm text-muted mb-6">{scanResult.description}</p>
+        <p
+          className={`text-sm text-muted ${scanResult.pagesInspected.length ? "mb-2" : "mb-6"}`}
+        >
+          {scanResult.description}
+        </p>
+      )}
+      {scanResult.pagesInspected.length > 0 && (
+        <p className="text-xs text-muted mb-6">
+          {scanResult.pagesInspected.length} public page
+          {scanResult.pagesInspected.length === 1 ? "" : "s"} inspected:{" "}
+          {scanResult.pagesInspected
+            .map((url) => new URL(url).pathname || "/")
+            .join(", ")}
+        </p>
+      )}
+      {!scanResult.description && scanResult.pagesInspected.length === 0 && (
+        <div className="mb-6" />
       )}
 
       <div className="space-y-6">

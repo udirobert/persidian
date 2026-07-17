@@ -20,7 +20,7 @@ function buildLlmsTxt(): string {
 > ${SITE_DESCRIPTION}
 
 Persidian is a studio building six autonomous agents for compounding business risks.
-Shared operating principle: agents act inside the systems where risk lives, with a human approval gate on every write or execution.
+Shared operating principle: agents act inside the systems where risk lives. Write-back and execution are gated per product — see each agent entity page for approval boundaries.
 
 ## Agents
 
