@@ -1,4 +1,11 @@
 export type FactKind = "found" | "inferred" | "unknown";
+export type FactReviewStatus = "confirmed" | "incorrect" | "unsure";
+
+export interface FactSignals {
+  role?: string;
+  painPoints?: string[];
+  tools?: string[];
+}
 
 export interface ScanFact {
   id: string;
@@ -6,7 +13,7 @@ export interface ScanFact {
   text: string;
   confidence: "high" | "medium" | "low";
   sources: { label: string; url: string; quote?: string }[];
-  confirmed?: boolean;
+  signals?: FactSignals;
 }
 
 export interface ScanProgressStep {
@@ -29,6 +36,8 @@ export interface ScanResult {
   };
   suggestedAnswers: Partial<import("@/lib/diagnostic").DiagnosticAnswers>;
   escalatedToBrowser: boolean;
+  regions: string[];
+  integrations: string[];
 }
 
 export interface ScanRequest {

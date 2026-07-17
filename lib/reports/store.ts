@@ -1,12 +1,15 @@
 import { createHash, randomBytes, timingSafeEqual } from "crypto";
-import { mkdir, readFile, unlink, writeFile } from "fs/promises";
+import { mkdir, readdir, readFile, unlink, writeFile } from "fs/promises";
 import path from "path";
+import { buildReportRecord } from "@/lib/reports/build";
+import { buildStoredRecommendation } from "@/lib/reports/validate";
 import type {
   CreateReportInput,
   CreateReportResult,
   PublicXrayReport,
   XrayReportRecord,
 } from "@/lib/reports/types";
+import { ReportPersistenceError } from "@/lib/reports/types";
 import { SITE_URL } from "@/lib/site";
 
 const REPORT_TTL_MS =
@@ -37,19 +40,24 @@ function isExpired(record: XrayReportRecord): boolean {
 }
 
 function toPublic(record: XrayReportRecord): PublicXrayReport {
-  const { deletionTokenHash: _hash, email: _email, consent: _consent, ...rest } = record;
+  const { deletionTokenHash, email, consent, ...rest } = record;
+  void deletionTokenHash;
+  void email;
+  void consent;
   return rest;
+}
+
+function sanitizeEmail(email?: string): string | undefined {
+  if (!email) return undefined;
+  const trimmed = email.trim().toLowerCase().slice(0, 254);
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed) ? trimmed : undefined;
 }
 
 async function writeRecord(record: XrayReportRecord): Promise<void> {
   memoryStore.set(record.id, record);
-  try {
-    const dir = reportsDir();
-    await mkdir(dir, { recursive: true });
-    await writeFile(reportPath(record.id), JSON.stringify(record), "utf8");
-  } catch {
-    // Read-only or ephemeral filesystem — memory fallback only
-  }
+  const dir = reportsDir();
+  await mkdir(dir, { recursive: true });
+  await writeFile(reportPath(record.id), JSON.stringify(record), "utf8");
 }
 
 async function readRecord(id: string): Promise<XrayReportRecord | null> {
@@ -87,35 +95,65 @@ async function deleteRecord(id: string): Promise<void> {
   }
 }
 
-function sanitizeEmail(email?: string): string | undefined {
-  if (!email) return undefined;
-  const trimmed = email.trim().toLowerCase().slice(0, 254);
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed) ? trimmed : undefined;
+export async function sweepExpiredReports(): Promise<number> {
+  let removed = 0;
+  const dir = reportsDir();
+
+  try {
+    await mkdir(dir, { recursive: true });
+    const files = await readdir(dir);
+
+    for (const file of files) {
+      if (!file.endsWith(".json")) continue;
+      const id = file.replace(/\.json$/, "");
+      if (!isValidId(id)) continue;
+
+      try {
+        const raw = await readFile(path.join(dir, file), "utf8");
+        const record = JSON.parse(raw) as XrayReportRecord;
+        if (isExpired(record)) {
+          await deleteRecord(id);
+          removed += 1;
+        }
+      } catch (error) {
+        console.error(JSON.stringify({ event: "report_cleanup_error", file, error: String(error) }));
+      }
+    }
+  } catch (error) {
+    console.error(JSON.stringify({ event: "report_cleanup_failed", error: String(error) }));
+  }
+
+  return removed;
 }
 
 export async function createReport(input: CreateReportInput): Promise<CreateReportResult> {
+  await sweepExpiredReports();
+
   const id = crypto.randomUUID();
   const deletionToken = randomBytes(24).toString("hex");
   const createdAt = new Date().toISOString();
   const expiresAt = new Date(Date.now() + REPORT_TTL_MS).toISOString();
+  const recommendation = buildStoredRecommendation(input.answers);
 
-  const record: XrayReportRecord = {
-    id,
-    createdAt,
-    expiresAt,
-    deletionTokenHash: hashToken(deletionToken),
-    consent: true,
-    email: sanitizeEmail(input.email),
-    path: input.path,
-    scannedUrl: input.scannedUrl?.slice(0, 500),
-    scanDomain: input.scanDomain?.slice(0, 200),
-    facts: (input.facts ?? []).slice(0, 30),
-    confirmedFactIds: (input.confirmedFactIds ?? []).slice(0, 30),
-    answers: input.answers,
-    recommendation: input.recommendation,
-  };
+  const record = buildReportRecord(
+    input,
+    {
+      id,
+      createdAt,
+      expiresAt,
+      deletionTokenHash: hashToken(deletionToken),
+    },
+    recommendation
+  );
 
-  await writeRecord(record);
+  record.email = sanitizeEmail(input.email);
+
+  try {
+    await writeRecord(record);
+  } catch (error) {
+    console.error(JSON.stringify({ event: "report_write_failed", id, error: String(error) }));
+    throw new ReportPersistenceError("Could not persist report. Please try again later.");
+  }
 
   return {
     id,

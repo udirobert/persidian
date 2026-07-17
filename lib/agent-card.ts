@@ -64,8 +64,10 @@ export function buildAgentCard() {
         method: "POST",
         path: "/api/reports",
         description: "Save a consent-based shareable X-ray report (30-day retention)",
-        safe: true,
+        safe: false,
         requires_auth: false,
+        consent_required: true,
+        side_effects: ["persists_report"],
       },
     ],
     products: PRODUCTS.map((p) => ({

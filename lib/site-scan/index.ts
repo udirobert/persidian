@@ -15,7 +15,11 @@ import {
 } from "@/lib/site-scan/signals";
 import { mergeTinyFishFacts, runTinyFishExtract } from "@/lib/site-scan/tinyfish";
 import type { ScanProgressStep, ScanResult } from "@/lib/site-scan/types";
-import { UrlValidationError, validatePublicUrl, validateRedirectUrl } from "@/lib/site-scan/url";
+import { UrlValidationError, assertHostnameResolvesPublic, validatePublicUrl, validateRedirectUrl } from "@/lib/site-scan/url";
+
+async function revalidateHost(url: string): Promise<void> {
+  await assertHostnameResolvesPublic(new URL(url).hostname);
+}
 
 function progress(steps: ScanProgressStep[]): ScanProgressStep[] {
   return steps;
@@ -43,7 +47,8 @@ export async function scanWebsite(rawUrl: string): Promise<ScanResult> {
   steps[1].status = "active";
 
   const origin = parsed.origin;
-  const robots = await fetchRobotsTxt(origin);
+  const revalidate = (url: string) => revalidateHost(url);
+  const robots = await fetchRobotsTxt(origin, validateRedirectUrl, revalidate);
   if (robotsDisallowsAll(robots)) {
     throw new UrlValidationError("This site's robots.txt disallows scanning");
   }
@@ -51,7 +56,11 @@ export async function scanWebsite(rawUrl: string): Promise<ScanResult> {
   steps[1].status = "done";
   steps[2].status = "active";
 
-  const { finalUrl, html } = await fetchPublicPage(parsed.toString(), validateRedirectUrl);
+  const { finalUrl, html } = await fetchPublicPage(
+    parsed.toString(),
+    validateRedirectUrl,
+    revalidate
+  );
   steps[2].status = "done";
   steps[3].status = "active";
 
@@ -77,7 +86,7 @@ export async function scanWebsite(rawUrl: string): Promise<ScanResult> {
   steps[5].status = "active";
 
   const facts = buildFacts(page, finalUrl);
-  const followUpQuestion = buildFollowUpQuestion(page, facts);
+  const followUpQuestion = buildFollowUpQuestion(page, facts, {});
   const suggestedAnswers = mapToDiagnosticAnswers(page);
 
   steps[5].status = "done";
@@ -92,6 +101,8 @@ export async function scanWebsite(rawUrl: string): Promise<ScanResult> {
     followUpQuestion,
     suggestedAnswers,
     escalatedToBrowser,
+    regions: page.regions,
+    integrations: page.integrations,
   };
 }
 

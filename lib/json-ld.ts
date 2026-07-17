@@ -22,7 +22,7 @@ export function organizationJsonLd() {
       name: FOUNDER_NAME,
       sameAs: [FOUNDER_X, FOUNDER_GITHUB],
     },
-    sameAs: [FOUNDER_X, FOUNDER_GITHUB, ...PRODUCTS.map((p) => p.repo)],
+    sameAs: [FOUNDER_X, FOUNDER_GITHUB],
   };
 }
 
@@ -55,10 +55,6 @@ export function productListJsonLd() {
         url: `${SITE_URL}${product.entityHref}`,
         applicationCategory: "BusinessApplication",
         description: product.tagline,
-        offers: {
-          "@type": "Offer",
-          availability: "https://schema.org/InStock",
-        },
       },
     })),
   };
@@ -78,9 +74,5 @@ export function productJsonLd(product: (typeof PRODUCTS)[number]) {
       url: SITE_URL,
     },
     sameAs: [product.href, product.repo],
-    offers: {
-      "@type": "Offer",
-      availability: "https://schema.org/InStock",
-    },
   };
 }

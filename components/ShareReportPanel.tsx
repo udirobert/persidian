@@ -3,36 +3,24 @@
 import Link from "next/link";
 import { useState } from "react";
 import type { DiagnosticAnswers } from "@/lib/diagnostic";
-import type { ScanFact } from "@/lib/site-scan/types";
-import type { BaseProject } from "@/lib/products";
-
+import type { FactReviewStatus, ScanFact } from "@/lib/site-scan/types";
 import { CONTACT_EMAIL } from "@/lib/site";
 
-interface DiagnosticResult {
-  product: BaseProject | null;
-  reasoning: string;
-  agentSays: string;
-  confidence: "high" | "medium" | "low";
-  scores: { key: string; name: string; percentage: number; score: number }[];
-}
-
 interface ShareReportPanelProps {
-  result: DiagnosticResult;
   answers: DiagnosticAnswers;
   scanResult: {
     url: string;
     domain: string;
     facts: ScanFact[];
   } | null;
-  confirmedFactIds: string[];
+  factStatuses: Record<string, FactReviewStatus>;
   path: "url" | "manual";
 }
 
 export function ShareReportPanel({
-  result,
   answers,
   scanResult,
-  confirmedFactIds,
+  factStatuses,
   path,
 }: ShareReportPanelProps) {
   const [consent, setConsent] = useState(false);
@@ -63,21 +51,8 @@ export function ShareReportPanel({
           scannedUrl: scanResult?.url,
           scanDomain: scanResult?.domain,
           facts: scanResult?.facts ?? [],
-          confirmedFactIds,
+          factStatuses,
           answers,
-          recommendation: {
-            productSlug: result.product?.slug ?? null,
-            productName: result.product?.name ?? null,
-            thesisLabel: result.product?.thesisLabel ?? null,
-            tagline: result.product?.tagline ?? null,
-            entityHref: result.product?.entityHref ?? null,
-            productHref: result.product?.href ?? null,
-            accent: result.product?.accent ?? null,
-            reasoning: result.reasoning,
-            agentSays: result.agentSays,
-            confidence: result.confidence,
-            scores: result.scores,
-          },
         }),
       });
 
@@ -165,8 +140,8 @@ export function ShareReportPanel({
     <div className="rounded-2xl border border-border bg-border/20 p-5 sm:p-6">
       <p className="section-label text-muted mb-2">Save &amp; share this report</p>
       <p className="text-sm text-muted mb-4">
-        Optional. We only store a report if you consent. Anonymous sessions stay in your browser
-        until you choose to save.
+        Optional. We only store a report if you consent. The server recomputes the recommendation
+        from your confirmed findings — it cannot be forged from the browser.
       </p>
 
       <label className="flex items-start gap-3 text-sm leading-relaxed mb-4 cursor-pointer">

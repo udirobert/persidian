@@ -8,7 +8,11 @@ import {
   scoreAnswers,
   type DiagnosticAnswers,
 } from "@/lib/diagnostic";
-import type { ScanFact, ScanResult } from "@/lib/site-scan/types";
+import {
+  deriveAnswersFromFactReview,
+  buildFollowUpFromScanResult,
+} from "@/lib/site-scan/signals";
+import type { FactReviewStatus, ScanFact, ScanResult } from "@/lib/site-scan/types";
 import type { BaseProject } from "@/lib/products";
 import { ShareReportPanel } from "@/components/ShareReportPanel";
 
@@ -65,8 +69,7 @@ export function Diagnostic({ accent }: DiagnosticProps) {
   const [websiteUrl, setWebsiteUrl] = useState("");
   const [scanResult, setScanResult] = useState<ScanResult | null>(null);
   const [scanError, setScanError] = useState("");
-  const [scanProgressIndex, setScanProgressIndex] = useState(0);
-  const [confirmedFacts, setConfirmedFacts] = useState<Record<string, boolean>>({});
+  const [factStatuses, setFactStatuses] = useState<Record<string, FactReviewStatus>>({});
 
   const [step, setStep] = useState(0);
   const [answers, setAnswers] = useState<DiagnosticAnswers>({});
@@ -97,11 +100,6 @@ export function Diagnostic({ accent }: DiagnosticProps) {
   const runScan = async () => {
     setScanError("");
     setFlow("scanning");
-    setScanProgressIndex(0);
-
-    const progressTimer = window.setInterval(() => {
-      setScanProgressIndex((i) => Math.min(i + 1, 4));
-    }, 900);
 
     try {
       const response = await fetch("/api/scan", {
@@ -110,7 +108,6 @@ export function Diagnostic({ accent }: DiagnosticProps) {
         body: JSON.stringify({ url: websiteUrl }),
       });
       const data = (await response.json()) as ScanResult & { error?: string };
-      clearInterval(progressTimer);
 
       if (!response.ok) {
         setScanError(data.error || "Could not scan that website.");
@@ -119,13 +116,16 @@ export function Diagnostic({ accent }: DiagnosticProps) {
       }
 
       setScanResult(data);
-      setAnswers((prev) => ({ ...prev, ...data.suggestedAnswers }));
-      setConfirmedFacts(
-        Object.fromEntries(data.facts.filter((f) => f.kind === "found").map((f) => [f.id, true]))
+      setFactStatuses(
+        Object.fromEntries(
+          data.facts
+            .filter((f) => f.kind !== "unknown")
+            .map((f) => [f.id, "unsure" as FactReviewStatus])
+        )
       );
+      setAnswers({});
       setFlow("review");
     } catch {
-      clearInterval(progressTimer);
       setScanError("Network error. Please check your connection and try again.");
       setFlow("url-input");
     }
@@ -234,7 +234,7 @@ export function Diagnostic({ accent }: DiagnosticProps) {
     setWebsiteUrl("");
     setScanResult(null);
     setScanError("");
-    setConfirmedFacts({});
+    setFactStatuses({});
     setStep(0);
     setAnswers({});
     setResult(null);
@@ -247,9 +247,7 @@ export function Diagnostic({ accent }: DiagnosticProps) {
         result={result}
         answers={answers}
         scanResult={scanResult}
-        confirmedFactIds={Object.entries(confirmedFacts)
-          .filter(([, confirmed]) => confirmed)
-          .map(([id]) => id)}
+        factStatuses={factStatuses}
         path={scanResult ? "url" : "manual"}
         accent={accent}
         liveScores={liveScores}
@@ -291,7 +289,7 @@ export function Diagnostic({ accent }: DiagnosticProps) {
           </button>
         </div>
         <p className="mt-4 text-xs text-muted leading-relaxed">
-          We inspect public pages only. No login, no changes, no email required. You review every inference.{" "}
+          We read the submitted public page only. No login, no changes, no email required. You review every inference.{" "}
           <Link href="/trust" className="underline underline-offset-4 hover:text-foreground transition-colors">
             How scanning works
           </Link>
@@ -316,34 +314,15 @@ export function Diagnostic({ accent }: DiagnosticProps) {
   }
 
   if (flow === "scanning") {
-    const labels = [
-      "Validating URL",
-      "Reading homepage",
-      "Checking public integrations",
-      "Extracting company facts",
-      "Comparing possible risks",
-    ];
     return (
       <div ref={cardRef} className="rounded-2xl border border-border bg-background p-6 sm:p-8" data-enter>
-        <p className="section-kicker text-muted mb-5">Scanning {websiteUrl}</p>
-        <ul className="space-y-3">
-          {labels.map((label, i) => (
-            <li key={label} className="flex items-center gap-3 text-sm">
-              <span
-                className={`w-2 h-2 rounded-full ${
-                  i < scanProgressIndex
-                    ? "bg-accent"
-                    : i === scanProgressIndex
-                      ? "bg-accent animate-pulse"
-                      : "bg-border"
-                }`}
-              />
-              <span className={i <= scanProgressIndex ? "text-foreground" : "text-muted"}>
-                {label}
-              </span>
-            </li>
-          ))}
-        </ul>
+        <p className="section-kicker text-muted mb-5">Analyzing {websiteUrl}</p>
+        <p className="text-sm text-muted mb-6">
+          Reading the submitted public page and extracting cited facts.
+        </p>
+        <div className="h-1 w-full rounded-full bg-border overflow-hidden">
+          <div className="h-full w-1/3 rounded-full bg-accent animate-pulse" />
+        </div>
       </div>
     );
   }
@@ -353,18 +332,24 @@ export function Diagnostic({ accent }: DiagnosticProps) {
       <FactsReview
         cardRef={cardRef}
         scanResult={scanResult}
-        confirmedFacts={confirmedFacts}
-        onToggleFact={(id) =>
-          setConfirmedFacts((prev) => ({ ...prev, [id]: !prev[id] }))
+        factStatuses={factStatuses}
+        onSetStatus={(id, status) =>
+          setFactStatuses((prev) => ({ ...prev, [id]: status }))
         }
-        onContinue={() => setFlow("followup")}
+        onContinue={() => {
+          const derived = deriveAnswersFromFactReview(scanResult.facts, factStatuses);
+          setAnswers(derived);
+          setFlow("followup");
+        }}
         onBack={() => setFlow("url-input")}
       />
     );
   }
 
-  if (flow === "followup" && scanResult?.followUpQuestion) {
-    const q = scanResult.followUpQuestion;
+  if (flow === "followup" && scanResult) {
+    const q =
+      buildFollowUpFromScanResult(scanResult, answers) ?? scanResult.followUpQuestion;
+    if (!q) return null;
     return (
       <div ref={cardRef} className="rounded-2xl border border-border bg-background p-6 sm:p-8" data-enter>
         <p className="section-kicker text-muted mb-3">One question we cannot infer</p>
@@ -484,15 +469,15 @@ export function Diagnostic({ accent }: DiagnosticProps) {
 function FactsReview({
   cardRef,
   scanResult,
-  confirmedFacts,
-  onToggleFact,
+  factStatuses,
+  onSetStatus,
   onContinue,
   onBack,
 }: {
   cardRef: React.RefObject<HTMLDivElement | null>;
   scanResult: ScanResult;
-  confirmedFacts: Record<string, boolean>;
-  onToggleFact: (id: string) => void;
+  factStatuses: Record<string, FactReviewStatus>;
+  onSetStatus: (id: string, status: FactReviewStatus) => void;
   onContinue: () => void;
   onBack: () => void;
 }) {
@@ -501,6 +486,22 @@ function FactsReview({
     { title: "What we inferred", kind: "inferred" },
     { title: "What we cannot know", kind: "unknown" },
   ];
+
+  const statusButton = (factId: string, status: FactReviewStatus, label: string) => {
+    const active = factStatuses[factId] === status;
+    return (
+      <button
+        key={status}
+        type="button"
+        onClick={() => onSetStatus(factId, status)}
+        className={`text-[10px] uppercase tracking-wider px-2 py-1 rounded-full border ${
+          active ? "border-foreground text-foreground" : "border-border text-muted"
+        }`}
+      >
+        {label}
+      </button>
+    );
+  };
 
   return (
     <div ref={cardRef} className="rounded-2xl border border-border bg-background p-6 sm:p-8" data-enter>
@@ -522,26 +523,29 @@ function FactsReview({
               <ul className="space-y-3">
                 {items.map((fact) => (
                   <li key={fact.id} className="rounded-xl border border-border p-4">
-                    <div className="flex items-start justify-between gap-3">
-                      <p className="text-sm leading-relaxed">{fact.text}</p>
-                      {kind !== "unknown" && (
-                        <button
-                          type="button"
-                          onClick={() => onToggleFact(fact.id)}
-                          className={`shrink-0 text-[10px] uppercase tracking-wider px-2 py-1 rounded-full border ${
-                            confirmedFacts[fact.id]
-                              ? "border-foreground text-foreground"
-                              : "border-border text-muted"
-                          }`}
-                        >
-                          {confirmedFacts[fact.id] ? "Confirmed" : "Confirm?"}
-                        </button>
-                      )}
-                    </div>
+                    <p className="text-sm leading-relaxed">{fact.text}</p>
+                    {kind !== "unknown" && (
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        {statusButton(fact.id, "confirmed", "Confirmed")}
+                        {statusButton(fact.id, "incorrect", "Incorrect")}
+                        {statusButton(fact.id, "unsure", "Unsure")}
+                      </div>
+                    )}
                     {fact.sources.length > 0 && (
                       <p className="mt-2 text-xs text-muted">
                         Sources:{" "}
-                        {fact.sources.map((s) => s.label).join(", ")}
+                        {fact.sources.map((s, i) => (
+                          <span key={s.url}>
+                            {i > 0 && ", "}
+                            <a
+                              href={s.url}
+                              className="underline underline-offset-4 hover:text-foreground transition-colors"
+                              rel="noopener noreferrer"
+                            >
+                              {s.label}
+                            </a>
+                          </span>
+                        ))}
                         {fact.confidence !== "high" && ` · Confidence: ${fact.confidence}`}
                       </p>
                     )}
@@ -620,7 +624,7 @@ function ResultView({
   result,
   answers,
   scanResult,
-  confirmedFactIds,
+  factStatuses,
   path,
   accent,
   liveScores,
@@ -630,7 +634,7 @@ function ResultView({
   result: DiagnosticResult;
   answers: DiagnosticAnswers;
   scanResult: ScanResult | null;
-  confirmedFactIds: string[];
+  factStatuses: Record<string, FactReviewStatus>;
   path: "url" | "manual";
   accent?: string;
   liveScores: ReturnType<typeof scoreAnswers>;
@@ -741,14 +745,13 @@ function ResultView({
           />
 
           <ShareReportPanel
-            result={result}
             answers={answers}
             scanResult={
               scanResult
                 ? { url: scanResult.url, domain: scanResult.domain, facts: scanResult.facts }
                 : null
             }
-            confirmedFactIds={confirmedFactIds}
+            factStatuses={factStatuses}
             path={path}
           />
         </div>
@@ -776,10 +779,9 @@ function ResultView({
           </div>
 
           <ShareReportPanel
-            result={result}
             answers={answers}
             scanResult={null}
-            confirmedFactIds={confirmedFactIds}
+            factStatuses={factStatuses}
             path={path}
           />
         </>

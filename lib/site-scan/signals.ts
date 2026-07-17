@@ -1,6 +1,11 @@
 import type { DiagnosticAnswers } from "@/lib/diagnostic";
 import type { ExtractedPage } from "@/lib/site-scan/extract";
-import type { ScanFact, ScanResult } from "@/lib/site-scan/types";
+import type {
+  FactReviewStatus,
+  FactSignals,
+  ScanFact,
+  ScanResult,
+} from "@/lib/site-scan/types";
 
 const TOOL_MAP: Record<string, string> = {
   xero: "Xero / QuickBooks / Sage",
@@ -33,9 +38,61 @@ function unique<T>(items: T[]): T[] {
   return [...new Set(items)];
 }
 
+function roleFromIntegrations(integrations: string[]): string | undefined {
+  if (integrations.some((i) => ["xero", "quickbooks", "sage"].includes(i))) {
+    return "Finance / Accounting";
+  }
+  if (integrations.some((i) => ["salesforce", "hubspot", "linkedin"].includes(i))) {
+    return "Sales / Marketing / Growth";
+  }
+  if (integrations.some((i) => ["github", "gitlab"].includes(i))) {
+    return "Engineering / Protocol / Security";
+  }
+  if (integrations.some((i) => ["dbt", "snowflake", "openmetadata"].includes(i))) {
+    return "Data / Analytics";
+  }
+  if (integrations.some((i) => ["fluxx", "foundant", "amplifund", "submittable"].includes(i))) {
+    return "Grants / Program / Foundation ops";
+  }
+  return undefined;
+}
+
+function toolsFromIntegrations(integrations: string[]): string[] {
+  return unique(
+    integrations.map((i) => TOOL_MAP[i]).filter(Boolean) as string[]
+  );
+}
+
+export function deriveAnswersFromFactReview(
+  facts: ScanFact[],
+  statuses: Record<string, FactReviewStatus>
+): DiagnosticAnswers {
+  const answers: DiagnosticAnswers = {};
+  const pains = new Set<string>();
+  const tools = new Set<string>();
+  let role: string | undefined;
+
+  for (const fact of facts) {
+    if (fact.kind === "unknown") continue;
+    const status = statuses[fact.id] ?? "unsure";
+    if (status !== "confirmed" || !fact.signals) continue;
+
+    if (fact.signals.role && !role) role = fact.signals.role;
+    fact.signals.painPoints?.forEach((pain) => pains.add(pain));
+    fact.signals.tools?.forEach((tool) => tools.add(tool));
+  }
+
+  if (role) answers.role = role;
+  if (pains.size) answers.painPoints = [...pains];
+  if (tools.size) answers.tools = [...tools];
+  return answers;
+}
+
 export function buildFacts(page: ExtractedPage, pageUrl: string): ScanFact[] {
   const facts: ScanFact[] = [];
-  const source = { label: "Homepage", url: pageUrl };
+  const source = { label: "Submitted page", url: pageUrl };
+  const integrationTools = toolsFromIntegrations(page.integrations);
+  const integrationRole = roleFromIntegrations(page.integrations);
 
   if (page.description || page.h1 || page.title) {
     facts.push({
@@ -68,12 +125,17 @@ export function buildFacts(page: ExtractedPage, pageUrl: string): ScanFact[] {
   }
 
   if (page.integrations.length) {
+    const signals: FactSignals = {};
+    if (integrationRole) signals.role = integrationRole;
+    if (integrationTools.length) signals.tools = integrationTools;
+
     facts.push({
       id: "integrations",
       kind: "found",
       text: `Public integrations or tools referenced: ${page.integrations.join(", ")}`,
       confidence: "high",
       sources: [source],
+      signals,
     });
   }
 
@@ -97,6 +159,7 @@ export function buildFacts(page: ExtractedPage, pageUrl: string): ScanFact[] {
       text: `${pain} may be operationally relevant based on site language`,
       confidence: "medium",
       sources: [source],
+      signals: { painPoints: [pain] },
     });
   }
 
@@ -112,25 +175,11 @@ export function buildFacts(page: ExtractedPage, pageUrl: string): ScanFact[] {
 }
 
 export function mapToDiagnosticAnswers(page: ExtractedPage): Partial<DiagnosticAnswers> {
-  const tools = unique(
-    page.integrations.map((i) => TOOL_MAP[i]).filter(Boolean) as string[]
-  );
+  const tools = toolsFromIntegrations(page.integrations);
   const pains = unique(
     PAIN_SIGNALS.filter(({ pattern }) => pattern.test(page.textSample)).map((p) => p.pain)
   );
-
-  let role: string | undefined;
-  if (page.integrations.some((i) => ["xero", "quickbooks", "sage"].includes(i))) {
-    role = "Finance / Accounting";
-  } else if (page.integrations.some((i) => ["salesforce", "hubspot", "linkedin"].includes(i))) {
-    role = "Sales / Marketing / Growth";
-  } else if (page.integrations.some((i) => ["github", "gitlab"].includes(i))) {
-    role = "Engineering / Protocol / Security";
-  } else if (page.integrations.some((i) => ["dbt", "snowflake", "openmetadata"].includes(i))) {
-    role = "Data / Analytics";
-  } else if (page.integrations.some((i) => ["fluxx", "foundant", "amplifund", "submittable"].includes(i))) {
-    role = "Grants / Program / Foundation ops";
-  }
+  const role = roleFromIntegrations(page.integrations);
 
   return {
     role,
@@ -141,26 +190,49 @@ export function mapToDiagnosticAnswers(page: ExtractedPage): Partial<DiagnosticA
 
 export function buildFollowUpQuestion(
   page: ExtractedPage,
-  facts: ScanFact[]
+  facts: ScanFact[],
+  answers: DiagnosticAnswers
 ): ScanResult["followUpQuestion"] {
   const options: string[] = [];
+  const confirmedTools = answers.tools ?? [];
+  const confirmedPains = answers.painPoints ?? [];
 
-  if (page.integrations.includes("xero") || facts.some((f) => /receivable|invoice/i.test(f.text))) {
+  if (
+    page.integrations.includes("xero") ||
+    confirmedTools.some((t) => /xero|quickbooks|sage/i.test(t)) ||
+    confirmedPains.some((p) => /invoice|receivable/i.test(p))
+  ) {
     options.push("Overdue invoices and receivables");
   }
-  if (page.regions.length > 1 || /\b(currency|fx|international|global)\b/i.test(page.textSample)) {
+  if (
+    page.regions.length > 1 ||
+    /\b(currency|fx|international|global)\b/i.test(page.textSample) ||
+    confirmedPains.some((p) => /currency|fx/i.test(p))
+  ) {
     options.push("Currency exposure across markets");
   }
-  if (/\b(outreach|sales|prospect|pipeline)\b/i.test(page.textSample)) {
+  if (
+    /\b(outreach|sales|prospect|pipeline)\b/i.test(page.textSample) ||
+    confirmedPains.some((p) => /outreach/i.test(p))
+  ) {
     options.push("Prospecting and outreach effort");
   }
-  if (/\b(grant|milestone|foundation)\b/i.test(page.textSample)) {
+  if (
+    /\b(grant|milestone|foundation)\b/i.test(page.textSample) ||
+    confirmedPains.some((p) => /grant/i.test(p))
+  ) {
     options.push("Grant milestone verification backlog");
   }
-  if (/\b(data|metadata|warehouse|analytics)\b/i.test(page.textSample)) {
+  if (
+    /\b(data|metadata|warehouse|analytics)\b/i.test(page.textSample) ||
+    confirmedPains.some((p) => /data/i.test(p))
+  ) {
     options.push("Data quality and metadata trust");
   }
-  if (/\b(protocol|blockchain|security|consensus)\b/i.test(page.textSample)) {
+  if (
+    /\b(protocol|blockchain|security|consensus)\b/i.test(page.textSample) ||
+    confirmedPains.some((p) => /consensus|security|commit/i.test(p))
+  ) {
     options.push("Commit-level security signals");
   }
 
@@ -179,8 +251,8 @@ export function buildFollowUpQuestion(
   }
 
   const regionHint = page.regions.length
-    ? `We found signals across ${page.regions.join(" and ")}`
-    : "From your public site";
+    ? `From the submitted page, we found signals across ${page.regions.join(" and ")}`
+    : "From the submitted page";
   const toolHint = page.integrations.length
     ? ` and references to ${page.integrations.slice(0, 2).join(" and ")}`
     : "";
@@ -192,6 +264,18 @@ export function buildFollowUpQuestion(
   };
 }
 
-export function painFromFollowUp(option: string): string {
-  return option;
+export function buildFollowUpFromScanResult(
+  scan: { regions: string[]; integrations: string[]; facts: ScanFact[] },
+  answers: DiagnosticAnswers
+): ScanResult["followUpQuestion"] {
+  const page: ExtractedPage = {
+    textSample: scan.facts.map((fact) => fact.text).join(" "),
+    internalLinks: [],
+    jsonLdTypes: [],
+    integrations: scan.integrations,
+    regions: scan.regions,
+    businessModel: "unknown",
+  };
+
+  return buildFollowUpQuestion(page, scan.facts, answers);
 }

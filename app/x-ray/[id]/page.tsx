@@ -165,7 +165,24 @@ export default async function XrayReportPage({ params }: PageProps) {
                           )}
                           {fact.sources.length > 0 && (
                             <p className="mt-2 text-xs text-muted">
-                              Sources: {fact.sources.map((s) => s.label).join(", ")}
+                              Sources:{" "}
+                              {fact.sources.map((s, i) => (
+                                <span key={s.url}>
+                                  {i > 0 && ", "}
+                                  <a
+                                    href={s.url}
+                                    className="underline underline-offset-4 hover:text-foreground transition-colors"
+                                    rel="noopener noreferrer"
+                                  >
+                                    {s.label}
+                                  </a>
+                                </span>
+                              ))}
+                            </p>
+                          )}
+                          {report.factStatuses?.[fact.id] && (
+                            <p className="mt-1 text-[10px] uppercase tracking-wider text-muted">
+                              Review: {report.factStatuses[fact.id]}
                             </p>
                           )}
                         </li>

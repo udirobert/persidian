@@ -1,5 +1,5 @@
 import type { DiagnosticAnswers } from "@/lib/diagnostic";
-import type { ScanFact } from "@/lib/site-scan/types";
+import type { FactReviewStatus, ScanFact } from "@/lib/site-scan/types";
 
 export interface StoredRecommendation {
   productSlug: string | null;
@@ -27,6 +27,7 @@ export interface XrayReportRecord {
   scanDomain?: string;
   facts: ScanFact[];
   confirmedFactIds: string[];
+  factStatuses: Record<string, FactReviewStatus>;
   answers: DiagnosticAnswers;
   recommendation: StoredRecommendation;
 }
@@ -42,10 +43,9 @@ export interface CreateReportInput {
   path: "url" | "manual";
   scannedUrl?: string;
   scanDomain?: string;
-  facts?: ScanFact[];
-  confirmedFactIds?: string[];
+  facts: ScanFact[];
+  factStatuses: Record<string, FactReviewStatus>;
   answers: DiagnosticAnswers;
-  recommendation: StoredRecommendation;
 }
 
 export interface CreateReportResult {
@@ -53,4 +53,11 @@ export interface CreateReportResult {
   shareUrl: string;
   expiresAt: string;
   deletionToken: string;
+}
+
+export class ReportPersistenceError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "ReportPersistenceError";
+  }
 }

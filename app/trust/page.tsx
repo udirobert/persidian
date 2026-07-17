@@ -35,6 +35,10 @@ export default function TrustPage() {
           link. Optional email is used only for follow-up if you provide it.
         </p>
         <p className="mt-3">
+          Recommendations on saved reports are recomputed on the server from your confirmed
+          findings. Product names, URLs, and scores cannot be forged from the browser.
+        </p>
+        <p className="mt-3">
           Each saved report includes a deletion token. Use it with{" "}
           <code className="text-sm text-foreground">DELETE /api/reports/[id]</code> or email
           hello@persidian.com to request removal.

@@ -152,8 +152,8 @@ function Hero() {
               ignoring.
             </h1>
             <p className="mt-6 sm:mt-8 text-base sm:text-lg text-muted max-w-lg leading-relaxed">
-              Enter your website. Persidian researches it, you verify the findings,
-              and we match your costliest hidden risk to the agent built to stop it.
+              Enter your website. Persidian reads the submitted public page, you verify the
+              findings, and we match your costliest hidden risk to the agent built to stop it.
             </p>
 
             <div id="diagnostic" className="mt-8 w-full">
