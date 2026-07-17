@@ -1,5 +1,7 @@
 import { scanWebsite, UrlValidationError } from "@/lib/site-scan";
+import { checkTargetDomainScanLimit } from "@/lib/site-scan/limits";
 import { getClientIp, RateLimiter } from "@/lib/rate-limit";
+import { validatePublicUrl } from "@/lib/site-scan/url";
 import { NextResponse } from "next/server";
 
 const scanLimiter = new RateLimiter(8, 60 * 1000);
@@ -31,8 +33,31 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "A company website URL is required" }, { status: 400 });
   }
 
+  let parsed;
   try {
-    const result = await scanWebsite(url);
+    parsed = await validatePublicUrl(url.startsWith("http") ? url : `https://${url}`);
+  } catch (error) {
+    if (error instanceof UrlValidationError) {
+      return NextResponse.json({ error: error.message }, { status: 400 });
+    }
+    return NextResponse.json({ error: "Could not validate that URL" }, { status: 400 });
+  }
+
+  const domainLimit = checkTargetDomainScanLimit(parsed.hostname);
+  if (!domainLimit.allowed) {
+    return NextResponse.json(
+      { error: "This website was scanned recently. Please wait before scanning it again." },
+      {
+        status: 429,
+        headers: {
+          "Retry-After": String(Math.ceil(domainLimit.retryAfterMs / 1000)),
+        },
+      }
+    );
+  }
+
+  try {
+    const result = await scanWebsite(parsed.toString());
     return NextResponse.json(result);
   } catch (error) {
     if (error instanceof UrlValidationError) {

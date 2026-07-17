@@ -55,7 +55,8 @@ export default function TrustPage() {
         <ul className="list-disc pl-5 space-y-2 mt-3">
           <li>We read publicly accessible HTTP/HTTPS content and respect robots.txt.</li>
           <li>We do not attempt authenticated areas, private networks, or localhost targets.</li>
-          <li>Crawled text is treated as untrusted input — site content cannot trigger tools or outbound actions.</li>
+          <li>Per-IP and per-target-domain rate limits apply to prevent abuse.</li>
+          <li>Outbound fetches pin DNS results for the duration of a scan and throttle concurrent requests per host.</li>
           <li>Deletion: close the session or email hello@persidian.com to request removal of any saved report.</li>
         </ul>
       </ContentSection>

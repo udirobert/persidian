@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "eslint",
     "test": "node --import tsx --test lib/site-scan/*.test.ts",
+    "test:scan": "SCAN_INTEGRATION=1 npm test",
     "prepare": "husky"
   },
   "dependencies": {

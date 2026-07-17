@@ -1,4 +1,5 @@
 import { fetchPublicText } from "@/lib/site-scan/fetch";
+import type { FetchGuard } from "@/lib/site-scan/limits";
 import { isPathBlocked } from "@/lib/site-scan/robots";
 
 const MAX_EXTRA_PAGES = 4;
@@ -68,7 +69,7 @@ function parseSitemapLocs(xml: string, origin: string): string[] {
 async function fetchSitemapPaths(
   origin: string,
   validateRedirect: (url: URL) => Promise<URL>,
-  revalidateHost?: (url: string) => Promise<void>
+  guard?: FetchGuard
 ): Promise<string[]> {
   const candidates = [`${origin}/sitemap.xml`, `${origin}/sitemap_index.xml`];
   const paths = new Set<string>();
@@ -78,8 +79,9 @@ async function fetchSitemapPaths(
       const { text } = await fetchPublicText(
         candidate,
         validateRedirect,
-        revalidateHost,
-        256_000
+        undefined,
+        256_000,
+        guard
       );
       for (const path of parseSitemapLocs(text, origin)) {
         paths.add(path);
@@ -99,7 +101,7 @@ export async function discoverSupplementalPaths(
   homepageLinks: string[],
   robots: string | null,
   validateRedirect: (url: URL) => Promise<URL>,
-  revalidateHost?: (url: string) => Promise<void>
+  guard?: FetchGuard
 ): Promise<string[]> {
   const homepage = normalizePath(new URL(homepagePath, origin).pathname);
   const candidates = new Set<string>();
@@ -108,7 +110,7 @@ export async function discoverSupplementalPaths(
     if (path !== homepage) candidates.add(path);
   }
 
-  for (const path of await fetchSitemapPaths(origin, validateRedirect, revalidateHost)) {
+  for (const path of await fetchSitemapPaths(origin, validateRedirect, guard)) {
     if (path !== homepage) candidates.add(path);
   }
 

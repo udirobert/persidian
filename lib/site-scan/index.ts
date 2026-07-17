@@ -12,6 +12,7 @@ import {
   fetchRobotsTxt,
   robotsDisallowsAll,
 } from "@/lib/site-scan/fetch";
+import { createFetchGuard, runWithScanConcurrency } from "@/lib/site-scan/limits";
 import { mergeExtractedPages, type PageExtract } from "@/lib/site-scan/merge";
 import {
   buildFacts,
@@ -20,17 +21,18 @@ import {
 } from "@/lib/site-scan/signals";
 import { mergeTinyFishFacts, runTinyFishExtract } from "@/lib/site-scan/tinyfish";
 import type { ScanProgressStep, ScanResult } from "@/lib/site-scan/types";
-import { UrlValidationError, assertHostnameResolvesPublic, validatePublicUrl, validateRedirectUrl } from "@/lib/site-scan/url";
-
-async function revalidateHost(url: string): Promise<void> {
-  await assertHostnameResolvesPublic(new URL(url).hostname);
-}
+import { UrlValidationError, validatePublicUrl, validateRedirectUrl } from "@/lib/site-scan/url";
 
 function progress(steps: ScanProgressStep[]): ScanProgressStep[] {
   return steps;
 }
 
 export async function scanWebsite(rawUrl: string): Promise<ScanResult> {
+  return runWithScanConcurrency(() => scanWebsiteInner(rawUrl));
+}
+
+async function scanWebsiteInner(rawUrl: string): Promise<ScanResult> {
+  const guard = createFetchGuard();
   const steps: ScanProgressStep[] = [
     { id: "validate", label: "Validating URL", status: "active" },
     { id: "robots", label: "Reading robots.txt", status: "pending" },
@@ -52,8 +54,7 @@ export async function scanWebsite(rawUrl: string): Promise<ScanResult> {
   steps[1].status = "active";
 
   const origin = parsed.origin;
-  const revalidate = (url: string) => revalidateHost(url);
-  const robots = await fetchRobotsTxt(origin, validateRedirectUrl, revalidate);
+  const robots = await fetchRobotsTxt(origin, validateRedirectUrl, undefined, guard);
   if (robotsDisallowsAll(robots)) {
     throw new UrlValidationError("This site's robots.txt disallows scanning");
   }
@@ -64,7 +65,8 @@ export async function scanWebsite(rawUrl: string): Promise<ScanResult> {
   const { finalUrl, html } = await fetchPublicPage(
     parsed.toString(),
     validateRedirectUrl,
-    revalidate
+    undefined,
+    guard
   );
 
   const homepageExtract: ExtractedPage = extractFromHtml(html, finalUrl);
@@ -75,7 +77,7 @@ export async function scanWebsite(rawUrl: string): Promise<ScanResult> {
     homepageExtract.internalLinks,
     robots,
     validateRedirectUrl,
-    revalidate
+    guard
   );
 
   const pageExtracts: PageExtract[] = [{ url: finalUrl, page: homepageExtract }];
@@ -86,7 +88,8 @@ export async function scanWebsite(rawUrl: string): Promise<ScanResult> {
       const { finalUrl: resolvedUrl, html: pageHtml } = await fetchPublicPage(
         pageUrl,
         validateRedirectUrl,
-        revalidate
+        undefined,
+        guard
       );
       pageExtracts.push({
         url: resolvedUrl,

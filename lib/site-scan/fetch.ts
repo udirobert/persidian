@@ -1,4 +1,5 @@
 import { isPathBlocked } from "@/lib/site-scan/robots";
+import type { FetchGuard } from "@/lib/site-scan/limits";
 
 const MAX_HTML_BYTES = 512_000;
 const FETCH_TIMEOUT_MS = 12_000;
@@ -8,6 +9,12 @@ export interface FetchResult {
   finalUrl: string;
   html: string;
   status: number;
+}
+
+interface FetchOptions {
+  validateRedirect: (url: URL) => Promise<URL>;
+  revalidateHost?: (url: string) => Promise<void>;
+  guard?: FetchGuard;
 }
 
 async function readLimitedText(response: Response, maxBytes: number): Promise<string> {
@@ -43,13 +50,28 @@ async function readLimitedText(response: Response, maxBytes: number): Promise<st
 export async function fetchPublicPage(
   startUrl: string,
   validateRedirect: (url: URL) => Promise<URL>,
-  revalidateHost?: (url: string) => Promise<void>
+  revalidateHost?: (url: string) => Promise<void>,
+  guard?: FetchGuard
+): Promise<FetchResult> {
+  return fetchPublicPageWithOptions(startUrl, {
+    validateRedirect,
+    revalidateHost,
+    guard,
+  });
+}
+
+async function fetchPublicPageWithOptions(
+  startUrl: string,
+  { validateRedirect, revalidateHost, guard }: FetchOptions
 ): Promise<FetchResult> {
   let current = startUrl;
 
   for (let i = 0; i <= MAX_REDIRECTS; i++) {
     if (revalidateHost) {
       await revalidateHost(current);
+    }
+    if (guard) {
+      await guard.beforeRequest(current);
     }
 
     const controller = new AbortController();
@@ -65,6 +87,7 @@ export async function fetchPublicPage(
         },
       });
       clearTimeout(timeout);
+      guard?.afterRequest();
 
       if (response.status >= 300 && response.status < 400) {
         const location = response.headers.get("location");
@@ -94,6 +117,7 @@ export async function fetchPublicPage(
       };
     } catch (error) {
       clearTimeout(timeout);
+      guard?.afterRequest();
       if (error instanceof Error && error.name === "AbortError") {
         throw new Error("Request timed out");
       }
@@ -107,13 +131,17 @@ export async function fetchPublicPage(
 export async function fetchRobotsTxt(
   origin: string,
   validateRedirect: (url: URL) => Promise<URL>,
-  revalidateHost?: (url: string) => Promise<void>
+  revalidateHost?: (url: string) => Promise<void>,
+  guard?: FetchGuard
 ): Promise<string | null> {
   let current = `${origin}/robots.txt`;
 
   for (let i = 0; i <= MAX_REDIRECTS; i++) {
     if (revalidateHost) {
       await revalidateHost(current);
+    }
+    if (guard) {
+      await guard.beforeRequest(current);
     }
 
     const controller = new AbortController();
@@ -126,6 +154,7 @@ export async function fetchRobotsTxt(
         headers: { "User-Agent": "Persidian-Xray/1.0 (+https://persidian.com/trust)" },
       });
       clearTimeout(timeout);
+      guard?.afterRequest();
 
       if (response.status >= 300 && response.status < 400) {
         const location = response.headers.get("location");
@@ -139,6 +168,7 @@ export async function fetchRobotsTxt(
       return (await readLimitedText(response, 20_000)).slice(0, 20_000);
     } catch {
       clearTimeout(timeout);
+      guard?.afterRequest();
       return null;
     }
   }
@@ -154,13 +184,17 @@ export async function fetchPublicText(
   startUrl: string,
   validateRedirect: (url: URL) => Promise<URL>,
   revalidateHost?: (url: string) => Promise<void>,
-  maxBytes = 256_000
+  maxBytes = 256_000,
+  guard?: FetchGuard
 ): Promise<{ finalUrl: string; text: string; status: number }> {
   let current = startUrl;
 
   for (let i = 0; i <= MAX_REDIRECTS; i++) {
     if (revalidateHost) {
       await revalidateHost(current);
+    }
+    if (guard) {
+      await guard.beforeRequest(current);
     }
 
     const controller = new AbortController();
@@ -176,6 +210,7 @@ export async function fetchPublicText(
         },
       });
       clearTimeout(timeout);
+      guard?.afterRequest();
 
       if (response.status >= 300 && response.status < 400) {
         const location = response.headers.get("location");
@@ -200,6 +235,7 @@ export async function fetchPublicText(
       };
     } catch (error) {
       clearTimeout(timeout);
+      guard?.afterRequest();
       if (error instanceof Error && error.name === "AbortError") {
         throw new Error("Request timed out");
       }
