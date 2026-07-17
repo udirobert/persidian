@@ -31,6 +31,12 @@ export function Footer() {
       </p>
       <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
         <Link
+          href="/capabilities"
+          className="text-xs font-medium text-muted hover:text-foreground transition-colors"
+        >
+          Capabilities
+        </Link>
+        <Link
           href="/about"
           className="text-xs font-medium text-muted hover:text-foreground transition-colors"
         >

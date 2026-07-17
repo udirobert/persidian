@@ -51,6 +51,9 @@ ${FOUNDER_NAME}
 - Sitemap: ${SITE_URL}/sitemap.xml
 - Business X-ray (URL-first diagnostic): ${SITE_URL}/#diagnostic
 - Studio thesis: ${SITE_URL}/studio
+- Agent capabilities and public API: ${SITE_URL}/capabilities
+- OpenAPI: ${SITE_URL}/openapi.json
+- Agent card: ${SITE_URL}/.well-known/agent.json
 `;
 }
 
