@@ -109,6 +109,8 @@ The container does **not** publish a host port. Traefik routes to it directly ov
 
 On the VPS, create `~/persidian/.env` with the same variables as `.env.local`. `docker-compose.vps.yml` loads it via `env_file`, so the Next.js container receives the API keys at runtime. The `.env` file is gitignored and excluded from the Docker build context by `.dockerignore`.
 
+Saved X-ray reports are stored in `~/persidian/.data/reports/` on the host (mounted into the container at `/app/.data`). They survive rebuilds and restarts.
+
 ### Disk-space management
 
 Docker images, build cache, and container logs are the usual culprits. The setup prevents bloat in three ways:

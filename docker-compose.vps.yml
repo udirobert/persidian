@@ -10,6 +10,9 @@ services:
     restart: unless-stopped
     env_file:
       - .env
+    volumes:
+      # Persist consent-based X-ray reports across rebuilds/restarts
+      - ./.data:/app/.data
     # Cap log size so the container does not fill the VPS disk over time.
     logging:
       driver: "json-file"
