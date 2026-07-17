@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   DIAGNOSTIC_QUESTIONS,
@@ -7,6 +8,7 @@ import {
   scoreAnswers,
   type DiagnosticAnswers,
 } from "@/lib/diagnostic";
+import type { ScanFact, ScanResult } from "@/lib/site-scan/types";
 import type { BaseProject } from "@/lib/products";
 
 const EMAIL = "hello@persidian.com";
@@ -28,8 +30,6 @@ function smoothScrollToElement(id: string, offset = 80, duration = 1200) {
     const elapsed = now - startTime;
     const progress = Math.min(elapsed / duration, 1);
     const ease = 1 - Math.pow(1 - progress, 3);
-    // "instant" per frame so the CSS scroll-behavior:smooth on <html>
-    // doesn't re-animate (and lag) every step of this easing.
     window.scrollTo({ top: startY + diff * ease, behavior: "instant" });
     if (progress < 1) {
       requestAnimationFrame(step);
@@ -51,8 +51,22 @@ interface DiagnosticProps {
   accent?: string;
 }
 
+type Flow =
+  | "url-input"
+  | "scanning"
+  | "review"
+  | "followup"
+  | "manual"
+  | "transition";
+
 export function Diagnostic({ accent }: DiagnosticProps) {
-  const [started, setStarted] = useState(false);
+  const [flow, setFlow] = useState<Flow>("url-input");
+  const [websiteUrl, setWebsiteUrl] = useState("");
+  const [scanResult, setScanResult] = useState<ScanResult | null>(null);
+  const [scanError, setScanError] = useState("");
+  const [scanProgressIndex, setScanProgressIndex] = useState(0);
+  const [confirmedFacts, setConfirmedFacts] = useState<Record<string, boolean>>({});
+
   const [step, setStep] = useState(0);
   const [answers, setAnswers] = useState<DiagnosticAnswers>({});
   const [loading, setLoading] = useState(false);
@@ -72,65 +86,48 @@ export function Diagnostic({ accent }: DiagnosticProps) {
 
   const question = DIAGNOSTIC_QUESTIONS[step];
   const isLast = step === DIAGNOSTIC_QUESTIONS.length - 1;
-
   const liveScores = useMemo(() => scoreAnswers(answers), [answers]);
 
-  const currentAnswer = answers[question.id as keyof DiagnosticAnswers] as
+  const currentAnswer = answers[question?.id as keyof DiagnosticAnswers] as
     | string
     | string[]
     | undefined;
 
-  const handleSelect = async (value: string) => {
-    setError("");
-    if (question.type === "single") {
-      const nextAnswers: DiagnosticAnswers = { ...answers, [question.id]: value };
-      setAnswers(nextAnswers);
-      if (isLast) {
-        setTransition({
-          show: true,
-          quip: generateTransitionQuip(nextAnswers.timeline),
-        });
-        document.documentElement.classList.add("time-payoff-active");
-        await Promise.all([submit(nextAnswers), wait(1400)]);
-        setTransition({ show: false, quip: "" });
-        document.documentElement.classList.remove("time-payoff-active");
-      } else {
-        setStep((s) => s + 1);
+  const runScan = async () => {
+    setScanError("");
+    setFlow("scanning");
+    setScanProgressIndex(0);
+
+    const progressTimer = window.setInterval(() => {
+      setScanProgressIndex((i) => Math.min(i + 1, 4));
+    }, 900);
+
+    try {
+      const response = await fetch("/api/scan", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url: websiteUrl }),
+      });
+      const data = (await response.json()) as ScanResult & { error?: string };
+      clearInterval(progressTimer);
+
+      if (!response.ok) {
+        setScanError(data.error || "Could not scan that website.");
+        setFlow("url-input");
+        return;
       }
-    } else {
-      setAnswers((prev) => {
-        const arr = ((prev[question.id as keyof DiagnosticAnswers] as string[]) ?? []);
-        const next = arr.includes(value)
-          ? arr.filter((v) => v !== value)
-          : [...arr, value];
-        return { ...prev, [question.id]: next };
-      });
+
+      setScanResult(data);
+      setAnswers((prev) => ({ ...prev, ...data.suggestedAnswers }));
+      setConfirmedFacts(
+        Object.fromEntries(data.facts.filter((f) => f.kind === "found").map((f) => [f.id, true]))
+      );
+      setFlow("review");
+    } catch {
+      clearInterval(progressTimer);
+      setScanError("Network error. Please check your connection and try again.");
+      setFlow("url-input");
     }
-  };
-
-  const canAdvance =
-    question.type === "single"
-      ? typeof currentAnswer === "string"
-      : Array.isArray(currentAnswer) && currentAnswer.length > 0;
-
-  const handleNext = async () => {
-    if (!canAdvance) return;
-    if (isLast) {
-      setTransition({
-        show: true,
-        quip: generateTransitionQuip(answers.timeline),
-      });
-      document.documentElement.classList.add("time-payoff-active");
-      await Promise.all([submit(), wait(1400)]);
-      setTransition({ show: false, quip: "" });
-      document.documentElement.classList.remove("time-payoff-active");
-    } else {
-      setStep((s) => s + 1);
-    }
-  };
-
-  const handleBack = () => {
-    setStep((s) => Math.max(0, s - 1));
   };
 
   const submit = async (answersOverride?: DiagnosticAnswers) => {
@@ -159,8 +156,84 @@ export function Diagnostic({ accent }: DiagnosticProps) {
     }
   };
 
+  const finishWithTransition = async (payload: DiagnosticAnswers) => {
+    setTransition({
+      show: true,
+      quip: generateTransitionQuip(payload.timeline),
+    });
+    document.documentElement.classList.add("time-payoff-active");
+    await Promise.all([submit(payload), wait(1400)]);
+    setTransition({ show: false, quip: "" });
+    document.documentElement.classList.remove("time-payoff-active");
+  };
+
+  const handleManualSelect = async (value: string) => {
+    setError("");
+    if (question.type === "single") {
+      const nextAnswers: DiagnosticAnswers = { ...answers, [question.id]: value };
+      setAnswers(nextAnswers);
+      if (isLast) {
+        setFlow("transition");
+        await finishWithTransition(nextAnswers);
+      } else {
+        setStep((s) => s + 1);
+      }
+    } else {
+      setAnswers((prev) => {
+        const arr = ((prev[question.id as keyof DiagnosticAnswers] as string[]) ?? []);
+        const next = arr.includes(value)
+          ? arr.filter((v) => v !== value)
+          : [...arr, value];
+        return { ...prev, [question.id]: next };
+      });
+    }
+  };
+
+  const canAdvance =
+    question &&
+    (question.type === "single"
+      ? typeof currentAnswer === "string"
+      : Array.isArray(currentAnswer) && currentAnswer.length > 0);
+
+  const handleManualNext = async () => {
+    if (!canAdvance) return;
+    if (isLast) {
+      setFlow("transition");
+      await finishWithTransition(answers);
+    } else {
+      setStep((s) => s + 1);
+    }
+  };
+
+  const handleFollowUp = async (option: string) => {
+    const painMap: Record<string, string> = {
+      "Overdue invoices and receivables": "Late invoices & unpaid receivables",
+      "Currency exposure across markets": "Cross-currency FX drag",
+      "Prospecting and outreach effort": "Low reply rates on cold outreach",
+      "Grant milestone verification backlog":
+        "Grant milestones claimed but tranche stuck in review",
+      "Data quality and metadata trust": "Data nobody reads or trusts",
+      "Commit-level security signals":
+        "Code changes that affect consensus or security",
+    };
+
+    const pain = painMap[option] ?? option;
+    const nextAnswers: DiagnosticAnswers = {
+      ...answers,
+      painPoints: [...new Set([...(answers.painPoints ?? []), pain])],
+      timeline: answers.timeline ?? "This quarter",
+    };
+    setAnswers(nextAnswers);
+    setFlow("transition");
+    await finishWithTransition(nextAnswers);
+  };
+
   const reset = () => {
-    setStarted(false);
+    setFlow("url-input");
+    setWebsiteUrl("");
+    setScanResult(null);
+    setScanError("");
+    setConfirmedFacts({});
     setStep(0);
     setAnswers({});
     setResult(null);
@@ -172,6 +245,7 @@ export function Diagnostic({ accent }: DiagnosticProps) {
       <ResultView
         result={result}
         answers={answers}
+        scanResult={scanResult}
         accent={accent}
         liveScores={liveScores}
         onRestart={reset}
@@ -184,120 +258,312 @@ export function Diagnostic({ accent }: DiagnosticProps) {
     return <TransitionCard cardRef={cardRef} quip={transition.quip} />;
   }
 
-  if (!started) {
+  if (flow === "url-input") {
     return (
-      <div
-        ref={cardRef}
-        className="rounded-2xl border border-border bg-background p-6 sm:p-8"
-        data-enter
-      >
+      <div ref={cardRef} className="rounded-2xl border border-border bg-background p-6 sm:p-8" data-enter>
         <p className="section-kicker text-muted mb-3">Business X-ray</p>
-        <p className="text-muted leading-relaxed">
-          Tell us what hurts. We will surface the Persidian agent that fixes it.
-        </p>
-        <div className="mt-6 flex flex-wrap items-center gap-3">
+        <label htmlFor="company-url" className="block text-sm text-muted mb-2">
+          Enter your company website
+        </label>
+        <div className="flex flex-col sm:flex-row gap-2">
+          <input
+            id="company-url"
+            type="url"
+            inputMode="url"
+            placeholder="https://yourcompany.com"
+            value={websiteUrl}
+            onChange={(e) => setWebsiteUrl(e.target.value)}
+            className="flex-1 min-w-0 rounded-full border border-border bg-background px-4 py-3 text-sm focus:outline-none focus:border-foreground/30 transition-colors"
+          />
           <button
             type="button"
-            onClick={() => setStarted(true)}
-            className="inline-flex items-center gap-2 px-5 py-3 rounded-full bg-foreground text-background text-sm font-medium hover:opacity-90 active:scale-[0.97] transition-transform"
+            onClick={runScan}
+            disabled={!websiteUrl.trim()}
+            className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-full bg-foreground text-background text-sm font-medium hover:opacity-90 active:scale-[0.97] transition-transform disabled:opacity-40"
             style={accent ? { backgroundColor: accent } : undefined}
           >
-            Start the X-ray →
+            Run the X-ray →
           </button>
-          <span className="text-sm text-muted">Takes ~30 seconds</span>
         </div>
-        <p className="mt-4 text-xs text-muted">
-          Prefer email?{" "}
-          <a
-            href={`mailto:${EMAIL}`}
-            className="underline underline-offset-4 hover:text-foreground transition-colors"
-          >
-            {EMAIL}
-          </a>
+        <p className="mt-4 text-xs text-muted leading-relaxed">
+          We inspect public pages only. No login, no changes, no email required. You review every inference.{" "}
+          <Link href="/trust" className="underline underline-offset-4 hover:text-foreground transition-colors">
+            How scanning works
+          </Link>
         </p>
+        <button
+          type="button"
+          onClick={() => {
+            setFlow("manual");
+            setStep(0);
+          }}
+          className="mt-5 text-sm font-medium text-muted hover:text-foreground transition-colors"
+        >
+          No website, or prefer not to share it? Answer four questions instead →
+        </button>
+        {scanError && (
+          <p className="mt-4 text-sm text-red-600" role="alert">
+            {scanError}
+          </p>
+        )}
       </div>
     );
   }
 
-  return (
-    <div
-      ref={cardRef}
-      className="rounded-2xl border border-border bg-background p-6 sm:p-8"
-      data-enter
-      aria-busy={loading}
-    >
-      <div className="flex items-center justify-between mb-6">
-        <p className="section-kicker text-muted">
-          Question {step + 1} / {DIAGNOSTIC_QUESTIONS.length}
-        </p>
-        {step > 0 && (
-          <button
-            type="button"
-            onClick={handleBack}
-            className="text-xs font-medium text-muted hover:text-foreground transition-colors"
-          >
-            Back
-          </button>
-        )}
+  if (flow === "scanning") {
+    const labels = [
+      "Validating URL",
+      "Reading homepage",
+      "Checking public integrations",
+      "Extracting company facts",
+      "Comparing possible risks",
+    ];
+    return (
+      <div ref={cardRef} className="rounded-2xl border border-border bg-background p-6 sm:p-8" data-enter>
+        <p className="section-kicker text-muted mb-5">Scanning {websiteUrl}</p>
+        <ul className="space-y-3">
+          {labels.map((label, i) => (
+            <li key={label} className="flex items-center gap-3 text-sm">
+              <span
+                className={`w-2 h-2 rounded-full ${
+                  i < scanProgressIndex
+                    ? "bg-accent"
+                    : i === scanProgressIndex
+                      ? "bg-accent animate-pulse"
+                      : "bg-border"
+                }`}
+              />
+              <span className={i <= scanProgressIndex ? "text-foreground" : "text-muted"}>
+                {label}
+              </span>
+            </li>
+          ))}
+        </ul>
       </div>
+    );
+  }
 
-      <h3 className="text-xl sm:text-2xl font-semibold tracking-tight leading-tight mb-5">
-        {question.label}
-      </h3>
+  if (flow === "review" && scanResult) {
+    return (
+      <FactsReview
+        cardRef={cardRef}
+        scanResult={scanResult}
+        confirmedFacts={confirmedFacts}
+        onToggleFact={(id) =>
+          setConfirmedFacts((prev) => ({ ...prev, [id]: !prev[id] }))
+        }
+        onContinue={() => setFlow("followup")}
+        onBack={() => setFlow("url-input")}
+      />
+    );
+  }
 
-      <div className="flex flex-wrap gap-2 mb-6">
-        {question.options.map((option) => {
-          const selected =
-            question.type === "single"
-              ? currentAnswer === option
-              : Array.isArray(currentAnswer) && currentAnswer.includes(option);
-          return (
+  if (flow === "followup" && scanResult?.followUpQuestion) {
+    const q = scanResult.followUpQuestion;
+    return (
+      <div ref={cardRef} className="rounded-2xl border border-border bg-background p-6 sm:p-8" data-enter>
+        <p className="section-kicker text-muted mb-3">One question we cannot infer</p>
+        <h3 className="text-xl sm:text-2xl font-semibold tracking-tight leading-tight mb-5">
+          {q.label}
+        </h3>
+        <div className="flex flex-wrap gap-2">
+          {q.options.map((option) => (
             <button
               key={option}
               type="button"
-              onClick={() => handleSelect(option)}
-              className={`px-4 py-2.5 rounded-full border text-sm font-medium transition-all ${
-                selected
-                  ? "bg-foreground text-background border-foreground"
-                  : "border-border text-foreground hover:border-foreground/30"
-              }`}
-              aria-pressed={selected}
+              onClick={() => handleFollowUp(option)}
+              className="px-4 py-2.5 rounded-full border border-border text-sm font-medium hover:border-foreground/30 transition-colors"
             >
               {option}
             </button>
+          ))}
+        </div>
+        <button
+          type="button"
+          onClick={() => setFlow("review")}
+          className="mt-6 text-xs font-medium text-muted hover:text-foreground transition-colors"
+        >
+          Back to findings
+        </button>
+      </div>
+    );
+  }
+
+  if (flow === "manual") {
+    return (
+      <div ref={cardRef} className="rounded-2xl border border-border bg-background p-6 sm:p-8" data-enter aria-busy={loading}>
+        <div className="flex items-center justify-between mb-6">
+          <p className="section-kicker text-muted">
+            Question {step + 1} / {DIAGNOSTIC_QUESTIONS.length}
+          </p>
+          <div className="flex items-center gap-3">
+            {step > 0 && (
+              <button
+                type="button"
+                onClick={() => setStep((s) => Math.max(0, s - 1))}
+                className="text-xs font-medium text-muted hover:text-foreground transition-colors"
+              >
+                Back
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={() => setFlow("url-input")}
+              className="text-xs font-medium text-muted hover:text-foreground transition-colors"
+            >
+              Use website instead
+            </button>
+          </div>
+        </div>
+
+        <h3 className="text-xl sm:text-2xl font-semibold tracking-tight leading-tight mb-5">
+          {question.label}
+        </h3>
+
+        <div className="flex flex-wrap gap-2 mb-6">
+          {question.options.map((option) => {
+            const selected =
+              question.type === "single"
+                ? currentAnswer === option
+                : Array.isArray(currentAnswer) && currentAnswer.includes(option);
+            return (
+              <button
+                key={option}
+                type="button"
+                onClick={() => handleManualSelect(option)}
+                className={`px-4 py-2.5 rounded-full border text-sm font-medium transition-all ${
+                  selected
+                    ? "bg-foreground text-background border-foreground"
+                    : "border-border text-foreground hover:border-foreground/30"
+                }`}
+                aria-pressed={selected}
+              >
+                {option}
+              </button>
+            );
+          })}
+        </div>
+
+        {question.type === "multi" && (
+          <button
+            type="button"
+            onClick={handleManualNext}
+            disabled={!canAdvance}
+            className="inline-flex items-center gap-2 px-5 py-3 rounded-full bg-foreground text-background text-sm font-medium hover:opacity-90 active:scale-[0.97] transition-transform disabled:opacity-40"
+            style={accent ? { backgroundColor: accent } : undefined}
+          >
+            {isLast ? "Show result" : "Next"}
+          </button>
+        )}
+
+        {error && (
+          <p className="mt-4 text-sm text-red-600" role="alert">
+            {error}
+          </p>
+        )}
+
+        {step >= 1 && (
+          <ScoreBoard
+            scores={liveScores}
+            className="mt-10 pt-8 border-t border-border"
+            showTooltips
+          />
+        )}
+      </div>
+    );
+  }
+
+  return null;
+}
+
+function FactsReview({
+  cardRef,
+  scanResult,
+  confirmedFacts,
+  onToggleFact,
+  onContinue,
+  onBack,
+}: {
+  cardRef: React.RefObject<HTMLDivElement | null>;
+  scanResult: ScanResult;
+  confirmedFacts: Record<string, boolean>;
+  onToggleFact: (id: string) => void;
+  onContinue: () => void;
+  onBack: () => void;
+}) {
+  const groups: { title: string; kind: ScanFact["kind"] }[] = [
+    { title: "What we found", kind: "found" },
+    { title: "What we inferred", kind: "inferred" },
+    { title: "What we cannot know", kind: "unknown" },
+  ];
+
+  return (
+    <div ref={cardRef} className="rounded-2xl border border-border bg-background p-6 sm:p-8" data-enter>
+      <p className="section-kicker text-muted mb-2">Review findings</p>
+      <h3 className="text-xl sm:text-2xl font-semibold tracking-tight leading-tight mb-1">
+        {scanResult.title ?? scanResult.domain}
+      </h3>
+      {scanResult.description && (
+        <p className="text-sm text-muted mb-6">{scanResult.description}</p>
+      )}
+
+      <div className="space-y-6">
+        {groups.map(({ title, kind }) => {
+          const items = scanResult.facts.filter((f) => f.kind === kind);
+          if (!items.length) return null;
+          return (
+            <section key={kind}>
+              <p className="section-label text-muted mb-3">{title}</p>
+              <ul className="space-y-3">
+                {items.map((fact) => (
+                  <li key={fact.id} className="rounded-xl border border-border p-4">
+                    <div className="flex items-start justify-between gap-3">
+                      <p className="text-sm leading-relaxed">{fact.text}</p>
+                      {kind !== "unknown" && (
+                        <button
+                          type="button"
+                          onClick={() => onToggleFact(fact.id)}
+                          className={`shrink-0 text-[10px] uppercase tracking-wider px-2 py-1 rounded-full border ${
+                            confirmedFacts[fact.id]
+                              ? "border-foreground text-foreground"
+                              : "border-border text-muted"
+                          }`}
+                        >
+                          {confirmedFacts[fact.id] ? "Confirmed" : "Confirm?"}
+                        </button>
+                      )}
+                    </div>
+                    {fact.sources.length > 0 && (
+                      <p className="mt-2 text-xs text-muted">
+                        Sources:{" "}
+                        {fact.sources.map((s) => s.label).join(", ")}
+                        {fact.confidence !== "high" && ` · Confidence: ${fact.confidence}`}
+                      </p>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            </section>
           );
         })}
       </div>
 
-      {question.type === "multi" && (
+      <div className="mt-8 flex flex-wrap items-center gap-3">
         <button
           type="button"
-          onClick={handleNext}
-          disabled={!canAdvance}
-          className="inline-flex items-center gap-2 px-5 py-3 rounded-full bg-foreground text-background text-sm font-medium hover:opacity-90 active:scale-[0.97] transition-transform disabled:opacity-40 disabled:active:scale-100"
-          style={accent ? { backgroundColor: accent } : undefined}
+          onClick={onContinue}
+          className="inline-flex items-center gap-2 px-5 py-3 rounded-full bg-foreground text-background text-sm font-medium hover:opacity-90 active:scale-[0.97] transition-transform"
         >
-          {isLast ? "Show result" : "Next"}
+          Continue →
         </button>
-      )}
-
-      {error && (
-        <p className="mt-4 text-sm text-red-600" role="alert">
-          {error}
-        </p>
-      )}
-
-      <div aria-live="polite" className="sr-only">
-        {loading ? "Analyzing your answers..." : ""}
+        <button
+          type="button"
+          onClick={onBack}
+          className="text-sm font-medium text-muted hover:text-foreground transition-colors"
+        >
+          Try a different URL
+        </button>
       </div>
-
-      {step >= 1 && (
-        <ScoreBoard
-          scores={liveScores}
-          className="mt-10 pt-8 border-t border-border"
-          showTooltips
-        />
-      )}
     </div>
   );
 }
@@ -348,6 +614,7 @@ function ScoreBoard({
 function ResultView({
   result,
   answers,
+  scanResult,
   accent,
   liveScores,
   onRestart,
@@ -355,6 +622,7 @@ function ResultView({
 }: {
   result: DiagnosticResult;
   answers: DiagnosticAnswers;
+  scanResult: ScanResult | null;
   accent?: string;
   liveScores: ReturnType<typeof scoreAnswers>;
   onRestart: () => void;
@@ -369,11 +637,7 @@ function ResultView({
   };
 
   return (
-    <div
-      ref={cardRef}
-      className="rounded-2xl border border-border bg-background p-6 sm:p-8"
-      data-enter
-    >
+    <div ref={cardRef} className="rounded-2xl border border-border bg-background p-6 sm:p-8" data-enter>
       <div className="flex items-center justify-between gap-4 mb-5">
         <p className="section-kicker text-muted">Recommendation</p>
         {product && (
@@ -385,6 +649,13 @@ function ResultView({
           </span>
         )}
       </div>
+
+      {scanResult && (
+        <p className="text-xs text-muted mb-4">
+          Based on public signals from {scanResult.domain}
+          {scanResult.escalatedToBrowser ? " (browser-assisted read)" : ""}.
+        </p>
+      )}
 
       {product ? (
         <div className="space-y-5">
@@ -432,13 +703,18 @@ function ResultView({
             >
               Book a demo →
             </button>
-            <button
-              type="button"
-              onClick={() => smoothScrollToElement(product.name.toLowerCase())}
+            <Link
+              href={product.entityHref}
               className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-border text-sm font-medium hover:border-foreground/30 transition-colors"
             >
-              See the case
-            </button>
+              See proof
+            </Link>
+            <a
+              href={product.href}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-border text-sm font-medium hover:border-foreground/30 transition-colors"
+            >
+              Visit {product.name}
+            </a>
             <button
               type="button"
               onClick={onRestart}
@@ -507,11 +783,7 @@ function ChatPanel({
 
   const [messages, setMessages] = useState<
     { role: "user" | "assistant"; content: string }[]
-  >(
-    initialMessage
-      ? [{ role: "assistant", content: initialMessage }]
-      : []
-  );
+  >(initialMessage ? [{ role: "assistant", content: initialMessage }] : []);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -545,10 +817,7 @@ function ChatPanel({
       if (!response.ok || !data.reply) {
         throw new Error(data.error || "No response");
       }
-      setMessages((prev) => [
-        ...prev,
-        { role: "assistant", content: data.reply ?? "" },
-      ]);
+      setMessages((prev) => [...prev, { role: "assistant", content: data.reply ?? "" }]);
     } catch {
       setMessages((prev) => [
         ...prev,
@@ -564,7 +833,7 @@ function ChatPanel({
   };
 
   return (
-    <div className={`${className}`}>
+    <div className={className}>
       <p className="section-label text-muted mb-4">Ask the concierge</p>
       {messages.length > 0 && (
         <div className="max-h-48 overflow-y-auto space-y-3 mb-4 pr-1">
@@ -581,9 +850,7 @@ function ChatPanel({
               {m.content}
             </div>
           ))}
-          {loading && (
-            <p className="text-sm text-muted">Concierge is typing...</p>
-          )}
+          {loading && <p className="text-sm text-muted">Concierge is typing...</p>}
           <div ref={messagesEndRef} />
         </div>
       )}
@@ -632,11 +899,7 @@ function TransitionCard({
   quip: string;
 }) {
   return (
-    <div
-      ref={cardRef}
-      className="rounded-2xl border border-border bg-background p-6 sm:p-8"
-      data-enter
-    >
+    <div ref={cardRef} className="rounded-2xl border border-border bg-background p-6 sm:p-8" data-enter>
       <div className="flex flex-col items-center justify-center py-10 sm:py-14 text-center">
         <p className="text-2xl sm:text-3xl font-semibold tracking-tight leading-tight max-w-md">
           {quip}

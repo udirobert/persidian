@@ -17,6 +17,7 @@ import {
   DiversifiIcon,
 } from "@/components/ProductIcon";
 import { PRODUCTS as BASE_PRODUCTS, type BaseProject } from "@/lib/products";
+import { INDUSTRY_STAT_SOURCES } from "@/lib/evidence";
 
 interface Project extends BaseProject {
   icon: () => React.ReactElement;
@@ -151,8 +152,8 @@ function Hero() {
               ignoring.
             </h1>
             <p className="mt-6 sm:mt-8 text-base sm:text-lg text-muted max-w-lg leading-relaxed">
-              Four questions. No sales call. We match your costliest hidden
-              risk to the Persidian agent built to stop it.
+              Enter your website. Persidian researches it, you verify the findings,
+              and we match your costliest hidden risk to the agent built to stop it.
             </p>
 
             <div id="diagnostic" className="mt-8 w-full">
@@ -225,7 +226,9 @@ function TheProblem() {
           data-enter
           style={{ "--enter-delay": "120ms" } as React.CSSProperties}
         >
-          {PROJECTS.map((p) => (
+          {PROJECTS.map((p) => {
+            const source = INDUSTRY_STAT_SOURCES.find((s) => s.product === p.name);
+            return (
             <div key={p.name} className="bg-background p-4 sm:p-6">
               <p className="section-label text-muted mb-3">
                 {p.thesisLabel} · {p.name}
@@ -234,8 +237,17 @@ function TheProblem() {
                 {p.problemStat}
               </p>
               <p className="mt-2 text-xs sm:text-sm text-muted leading-relaxed">{p.problemLabel}</p>
+              {source && (
+                <a
+                  href={source.href}
+                  className="mt-2 inline-block text-[10px] sm:text-xs text-muted underline underline-offset-4 hover:text-foreground transition-colors"
+                  rel="noopener noreferrer"
+                >
+                  Source: {source.source}
+                </a>
+              )}
             </div>
-          ))}
+          )})}
         </div>
         <p className="mt-4 text-xs text-muted" data-enter style={{ "--enter-delay": "160ms" } as React.CSSProperties}>
           Drawn from public industry research and market data.
@@ -265,7 +277,7 @@ function PortfolioIndex() {
             return (
               <a
                 key={p.name}
-                href={p.href}
+                href={p.entityHref}
                 className="project-card relative isolate rounded-2xl border p-5"
                 style={
                   {
@@ -323,7 +335,7 @@ function PortfolioIndex() {
                   className="card-visit mt-3 inline-block text-xs font-medium opacity-0 transition-opacity duration-200"
                   style={{ color: p.accent }}
                 >
-                  Visit →
+                  Entity page →
                 </span>
               </a>
             );
@@ -363,6 +375,16 @@ function BeatLayout({
           >
             Visit {p.name} →
           </a>
+          <Link
+            href={p.entityHref}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs font-medium hover:opacity-80 transition-opacity"
+            style={{
+              borderColor: "color-mix(in srgb, currentColor 20%, transparent)",
+              color: p.muted,
+            }}
+          >
+            Proof &amp; scope
+          </Link>
           <a
             href={p.repo}
             className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs font-medium hover:opacity-80 transition-opacity"

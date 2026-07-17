@@ -1,5 +1,12 @@
 import type { Metadata } from "next";
 import { Fraunces, JetBrains_Mono } from "next/font/google";
+import { JsonLd } from "@/components/JsonLd";
+import {
+  organizationJsonLd,
+  productListJsonLd,
+  websiteJsonLd,
+} from "@/lib/json-ld";
+import { SITE_DESCRIPTION, SITE_NAME, SITE_URL } from "@/lib/site";
 import "./globals.css";
 
 const fraunces = Fraunces({
@@ -13,22 +20,22 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://persidian.com"),
-  title: "Persidian — Autonomous agents for the work that compounds",
-  description:
-    "Persidian builds autonomous agents that watch the compounding risks inside a business — cash, outreach, signals, data — and act before the damage scales.",
+  metadataBase: new URL(SITE_URL),
+  title: `${SITE_NAME} — Autonomous agents for the work that compounds`,
+  description: SITE_DESCRIPTION,
+  alternates: {
+    canonical: "/",
+  },
   openGraph: {
-    title: "Persidian — Autonomous agents for the work that compounds",
-    description:
-      "Persidian builds autonomous agents that watch the compounding risks inside a business — cash, outreach, signals, data — and act before the damage scales.",
+    title: `${SITE_NAME} — Autonomous agents for the work that compounds`,
+    description: SITE_DESCRIPTION,
     type: "website",
-    url: "https://persidian.com",
+    url: SITE_URL,
   },
   twitter: {
     card: "summary_large_image",
-    title: "Persidian — Autonomous agents for the work that compounds",
-    description:
-      "Persidian builds autonomous agents that watch the compounding risks inside a business — cash, outreach, signals, data — and act before the damage scales.",
+    title: `${SITE_NAME} — Autonomous agents for the work that compounds`,
+    description: SITE_DESCRIPTION,
   },
 };
 
@@ -42,7 +49,10 @@ export default function RootLayout({
       lang="en"
       className={`${fraunces.variable} ${jetbrainsMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-full flex flex-col">
+        <JsonLd data={[organizationJsonLd(), websiteJsonLd(), productListJsonLd()]} />
+        {children}
+      </body>
     </html>
   );
 }

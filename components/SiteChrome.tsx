@@ -29,7 +29,25 @@ export function Footer() {
       <p className="text-xs font-mono text-muted">
         © {new Date().getFullYear()} Persidian
       </p>
-      <div className="flex items-center gap-5">
+      <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
+        <Link
+          href="/about"
+          className="text-xs font-medium text-muted hover:text-foreground transition-colors"
+        >
+          About
+        </Link>
+        <Link
+          href="/trust"
+          className="text-xs font-medium text-muted hover:text-foreground transition-colors"
+        >
+          Trust
+        </Link>
+        <Link
+          href="/security"
+          className="text-xs font-medium text-muted hover:text-foreground transition-colors"
+        >
+          Security
+        </Link>
         <Link
           href="/studio"
           className="text-xs font-medium text-muted hover:text-foreground transition-colors"

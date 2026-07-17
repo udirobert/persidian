@@ -1,7 +1,9 @@
 export interface BaseProject {
   number: string;
   name: string;
+  slug: string;
   href: string;
+  entityHref: string;
   repo: string;
   tagline: string;
   thesisLabel: string;
@@ -17,11 +19,24 @@ export interface BaseProject {
   fontClass?: string;
 }
 
+export const PRODUCT_SLUGS = [
+  "sikizana",
+  "nuncio",
+  "lenitnes",
+  "databard",
+  "weft",
+  "diversifi",
+] as const;
+
+export type ProductSlug = (typeof PRODUCT_SLUGS)[number];
+
 export const PRODUCTS: BaseProject[] = [
   {
     number: "01",
     name: "Sikizana",
+    slug: "sikizana",
     href: "https://sikizana.persidian.com",
+    entityHref: "/agents/sikizana",
     repo: "https://github.com/udirobert/sikizana",
     tagline:
       "Get paid faster, with Xero. AI credit controller and bookkeeper that ages receivables, benchmarks your sector, and chases overdue invoices.",
@@ -39,7 +54,9 @@ export const PRODUCTS: BaseProject[] = [
   {
     number: "02",
     name: "Nuncio",
+    slug: "nuncio",
     href: "https://nuncio.persidian.com",
+    entityHref: "/agents/nuncio",
     repo: "https://github.com/udirobert/nuncio",
     tagline:
       "Send a video they'll actually watch. Multi-agent video personalization for sales, recruiting, and investor outreach.",
@@ -57,7 +74,9 @@ export const PRODUCTS: BaseProject[] = [
   {
     number: "03",
     name: "Lenitnes",
+    slug: "lenitnes",
     href: "https://lenitnes.persidian.com",
+    entityHref: "/agents/lenitnes",
     repo: "https://github.com/sneldao/lenitnes",
     tagline:
       "Autonomous signal intelligence. Reads commits to consensus-critical code, commits theses on-chain, and tracks an undeniable public scorecard.",
@@ -75,7 +94,9 @@ export const PRODUCTS: BaseProject[] = [
   {
     number: "04",
     name: "DataBard",
+    slug: "databard",
     href: "https://databard.persidian.com",
+    entityHref: "/agents/databard",
     repo: "https://github.com/thisyearnofear/databard",
     tagline:
       "Watches your data estate. Health scores, lineage risk, and PII flags — delivered as podcasts, dashboards, reports, and on-chain attestations.",
@@ -93,7 +114,9 @@ export const PRODUCTS: BaseProject[] = [
   {
     number: "05",
     name: "Weft",
+    slug: "weft",
     href: "https://weft.thisyearnofear.com",
+    entityHref: "/agents/weft",
     repo: "https://github.com/thisyearnofear/weft",
     tagline:
       "When a grantee marks a milestone complete, Weft checks your checklist and writes a verification receipt onto that grant record.",
@@ -111,7 +134,9 @@ export const PRODUCTS: BaseProject[] = [
   {
     number: "06",
     name: "Diversifi",
+    slug: "diversifi",
     href: "https://diversifi.persidian.com",
+    entityHref: "/agents/diversifi",
     repo: "https://github.com/thisyearnofear/diversify",
     tagline:
       "Risk-aware, values-driven treasury management. Quantifies FX drag on working capital and autonomously flattens it — every decision recorded on-chain with AI reasoning anchored to 0G.",
@@ -127,3 +152,7 @@ export const PRODUCTS: BaseProject[] = [
     fontClass: "",
   },
 ];
+
+export function getProductBySlug(slug: string): BaseProject | undefined {
+  return PRODUCTS.find((p) => p.slug === slug);
+}

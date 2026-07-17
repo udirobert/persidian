@@ -239,13 +239,23 @@ const timelineQuips: Record<string, string[]> = {
   ],
 };
 
-const patternQuips = [
-  "That's the signal.",
-  "Perfect.",
-  "Makes sense.",
-  "Found it.",
-  "Exactly the pattern we watch.",
-];
+const patternQuipsByConfidence: Record<"high" | "medium" | "low", string[]> = {
+  high: [
+    "That's a strong match.",
+    "The signals line up clearly.",
+    "This fits the pattern we built for.",
+  ],
+  medium: [
+    "Several signals point here.",
+    "This looks like a reasonable starting point.",
+    "Worth exploring this direction.",
+  ],
+  low: [
+    "It's an early match — worth validating.",
+    "Some overlap, but we'd confirm on a call.",
+    "Possible fit; a short demo would clarify.",
+  ],
+};
 
 const ctaQuips = [
   "Book a demo to see it in action.",
@@ -260,7 +270,8 @@ export function generateTransitionQuip(timeline = "Later / exploring"): string {
 
 export function generateAgentSays(
   answers: DiagnosticAnswers,
-  product: BaseProject
+  product: BaseProject,
+  confidence: "high" | "medium" | "low" = "medium"
 ): string {
   const role = answers.role?.split("/")[0]?.trim().toLowerCase();
   const pain = answers.painPoints?.[0];
@@ -274,7 +285,7 @@ export function generateAgentSays(
         role ? ` — it does its best work for ${role} teams` : ""
       }.`;
 
-  return `${pick(patternQuips)} ${match} ${pick(
+  return `${pick(patternQuipsByConfidence[confidence])} ${match} ${pick(
     timelineQuips[timeline] ?? timelineQuips["Later / exploring"]
   )} ${pick(ctaQuips)}`;
 }

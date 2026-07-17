@@ -9,6 +9,20 @@ export const metadata: Metadata = {
   title: "Persidian — The studio thesis",
   description:
     "Persidian runs six autonomous agents as one studio: each serves a different enterprise buyer, every integration hardens the next, and the aim is an operating layer businesses trust to act on their behalf.",
+  alternates: { canonical: "/studio" },
+  openGraph: {
+    title: "Persidian — The studio thesis",
+    description:
+      "Persidian runs six autonomous agents as one studio: each serves a different enterprise buyer, every integration hardens the next, and the aim is an operating layer businesses trust to act on their behalf.",
+    url: "https://persidian.com/studio",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Persidian — The studio thesis",
+    description:
+      "Persidian runs six autonomous agents as one studio: each serves a different enterprise buyer, every integration hardens the next, and the aim is an operating layer businesses trust to act on their behalf.",
+  },
 };
 
 /* Investor-facing material: the vision and the moat for each product, plus
@@ -224,6 +238,13 @@ function ProductCase({
         <p className="section-kicker" style={{ color: p.muted }}>
           {p.number} / {p.name} — {p.thesisLabel}
         </p>
+        <a
+          href={p.entityHref}
+          className="text-xs font-medium hover:opacity-80 transition-opacity"
+          style={{ color: p.accent }}
+        >
+          Entity page →
+        </a>
         <a
           href={p.href}
           className="text-xs font-medium hover:opacity-80 transition-opacity"
